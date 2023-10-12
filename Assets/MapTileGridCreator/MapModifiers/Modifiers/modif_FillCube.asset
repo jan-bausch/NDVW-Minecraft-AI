@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c894a247bd0643c43b5bced854e8938d, type: 3}
+  m_Name: modif_FillCube
+  m_EditorClassIdentifier: 
+  m_Pass: 0
+  m_MaxNodes: 10000
+  m_StartIndex: {x: 0, y: 0, z: 0}
+  m_NumberOfIterations: 1
+  m_UsePreviousOrDefaultIndex: 0
+  m_AllowCircular: 0
+  sizeCube: {x: 1, y: 1, z: 1}
+  prefab: {fileID: 1290374036178086058, guid: 7715f9312d08e0b44a5ff326fe6784d9, type: 3}
