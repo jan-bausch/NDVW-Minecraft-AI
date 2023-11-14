@@ -377,10 +377,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44d566ae16dabd44e82b9428d3b8b287, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  xMax: 2
-  yMax: 20
-  zMax: 2
-  threshold: 2
+  xMax: 50
+  yMax: 100
+  zMax: 50
+  threshold: 0
   material: {fileID: 2100000, guid: 4bf30e54f75abc84180c217ef7b72064, type: 2}
 --- !u!1 &559960021
 GameObject:
