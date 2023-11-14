@@ -2,25 +2,33 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 5.0f; // Adjust this to set the movement speed
+    public float moveSpeed = 5.0f;
+    public float jumpForce = 5.0f;
+    private CharacterController controller;
+    private Vector3 moveDirection;
+
+    void Start()
+    {
+        controller = GetComponent<CharacterController>();
+    }
 
     void Update()
     {
-        //Debug.Log((int)(1.0f / Time.smoothDeltaTime));
         float horizontal = Input.GetAxis("Horizontal");
         float vertical = Input.GetAxis("Vertical");
-        float elevation = 0;
 
-        if (Input.GetKey(KeyCode.Space))
+        if (controller.isGrounded)
         {
-            elevation = 1;
-        }
-        else if (Input.GetKey(KeyCode.LeftShift))
-        {
-            elevation = -1;
+            if (Input.GetButton("Jump"))
+            {
+                moveDirection.y = jumpForce;
+            }
         }
 
-        Vector3 movement = new Vector3(horizontal, elevation, vertical) * moveSpeed * Time.deltaTime;
-        transform.Translate(movement, Space.Self);
+        moveDirection.x = horizontal * moveSpeed;
+        moveDirection.y -= 9.81f * Time.deltaTime;
+        moveDirection.z = vertical * moveSpeed;
+
+        controller.Move(moveDirection * Time.deltaTime);
     }
 }
