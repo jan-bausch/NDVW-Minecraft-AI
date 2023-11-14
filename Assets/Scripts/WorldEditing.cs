@@ -11,6 +11,8 @@ namespace WorldEditing
         private Dictionary<Vector3, int> editedBlocks;
         private VoxelWorld world;
 
+        private List<EditableWorldListener> listeners;
+
         public EditableWorld(VoxelWorld world) : base(
             world.xMax, 
             world.yMax, 
@@ -19,6 +21,12 @@ namespace WorldEditing
         {   
             this.editedBlocks = new Dictionary<Vector3, int>();
             this.world = world;
+            listeners = new List<EditableWorldListener>();
+        }
+
+        public override void OverrideSeed(int seed)
+        {
+            world.OverrideSeed(seed);
         }
 
         public override int BlockAt(int x, int y, int z)
@@ -34,8 +42,19 @@ namespace WorldEditing
 
         public void SetBlock(int x, int y, int z, int block)
         {
+            int oldBlock = BlockAt(x, y, z);
             Vector3 key = new Vector3(x, y, z);
             editedBlocks[key] = block;
+
+            foreach(var listener in listeners)
+            {
+                listener.OnBlockUpdate(x, y, z, oldBlock, block);
+            }
         }
+    }
+
+    public interface EditableWorldListener 
+    {
+        void OnBlockUpdate(int x, int y, int z, int oldBlock, int newBlock);
     }
 }

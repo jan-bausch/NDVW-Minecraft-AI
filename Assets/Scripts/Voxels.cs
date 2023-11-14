@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -13,11 +14,21 @@ namespace Voxels
 
         public int xMax, yMax, zMax;
 
+        protected int seed;
+
         public VoxelWorld(int xMax, int yMax, int zMax)
         {
             this.xMax = xMax;
             this.yMax = yMax;
             this.zMax = zMax;
+
+            var random = new System.Random();
+            this.seed = random.Next();
+        }
+
+        public virtual void OverrideSeed(int seed)
+        {
+            this.seed = seed;
         }
 
         public abstract int BlockAt(int x, int y, int z);
@@ -200,7 +211,7 @@ namespace Voxels
             mesh.SetUVs(0, uvs);
 
             // Create a new game object and add a MeshFilter and MeshRenderer component
-            GameObject obj = new GameObject("Voxel");
+            GameObject obj = new GameObject("Voxel_" + x + "_" + y + "_" + "_" + z);
             MeshFilter meshFilter = obj.AddComponent<MeshFilter>();
 
             // Assign the created mesh to the MeshFilter

@@ -9,12 +9,13 @@ public class EnvironmentWorldGeneration : MonoBehaviour
     public VoxelWorld baseWorld;
     private EditableWorld world;
 
-    void Generate()
+    void Generate(int seed)
     {
         world = new EditableWorld(baseWorld);
         Debug.Log(gameObject);
         Debug.Log(world);
         Debug.Log(material);
+        world.OverrideSeed(seed);
         VoxelRenderer.RenderWorld(gameObject, world, material);
     }
 }
