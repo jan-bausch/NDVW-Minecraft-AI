@@ -3,16 +3,18 @@ using WorldGenerators;
 using WorldEditing;
 using Voxels;
 
-public class WorldGeneration : MonoBehaviour
+public class EnvironmentWorldGeneration : MonoBehaviour
 {
-    public int worldCount;
     public Material material;
     public VoxelWorld baseWorld;
     private EditableWorld world;
 
-    void Start()
+    void Generate()
     {
         world = new EditableWorld(baseWorld);
+        Debug.Log(gameObject);
+        Debug.Log(world);
+        Debug.Log(material);
         VoxelRenderer.RenderWorld(gameObject, world, material);
     }
 }

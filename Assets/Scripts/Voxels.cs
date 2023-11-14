@@ -33,7 +33,6 @@ namespace Voxels
                         GameObject voxel = renderVoxel(world,x,y,z);
                         if (voxel != null) 
                         {
-                            Debug.Log(voxel);
                             voxel.transform.SetParent(parent.transform);
                         }
                     }

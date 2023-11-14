@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 832f2af26b896a847a14eb3edb906f83, type: 3}
   m_Name: NewFlatWorldGenerator
   m_EditorClassIdentifier: 
-  xMax: 0
-  yMax: 0
-  zMax: 0
-  threshold: 0
+  xMax: 20
+  yMax: 20
+  zMax: 20
+  threshold: 4
