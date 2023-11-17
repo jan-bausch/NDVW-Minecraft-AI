@@ -26,7 +26,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        Debug.Log("Grounded: " + controller.isGrounded);
         HandleInput();
         MovePlayer();
     }
