@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Voxels
 {
@@ -50,7 +51,9 @@ namespace Voxels
                 }
             }
 
-            MeshFilter[] meshFilters = parent.GetComponentsInChildren<MeshFilter>();
+            MeshFilter[] meshFilters = parent.GetComponentsInChildren<MeshFilter>()
+                .Where(child => child != parent.transform && child.name.StartsWith("Voxel_"))
+                .ToArray();
             CombineInstance[] combine = new CombineInstance[meshFilters.Length];
 
             int i = 0;
@@ -204,8 +207,8 @@ namespace Voxels
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = vertices[i] + new Vector3(x, y, z); 
-                uvs[i].y = ((uvs[i].y * 64.0f) + ((float) (blockType % 4) * 80.0f)) / 304.0f;
-                uvs[i].x = ((uvs[i].x * 128.0f) + ((float) (blockType / 4) * 144.0f)) / 272.0f;
+                uvs[i].y = ((uvs[i].y * 64.0f) + ((float) (blockType % 4) * 64.0f)) / 256.0f;
+                uvs[i].x = ((uvs[i].x * 128.0f) + ((float) (blockType / 4) * 128.0f)) / 256.0f;
             }
 
             bool removeFrontFace = world.BlockAt(x - 0, y - 0, z - 1) != VoxelWorld.AIR;

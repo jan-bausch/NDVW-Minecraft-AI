@@ -23,6 +23,7 @@ public class EnvironmentsInitialization : MonoBehaviour
 
                 environmentClone.transform.parent = environmentParent.transform;
                 environmentClone.SetActive(true);
+                environmentClone.name = "Environment_" + x + "_" + z; 
 
                 int worldSeed = x*10000 + z;
                 environmentClone.SendMessage("Generate", worldSeed, SendMessageOptions.RequireReceiver);
