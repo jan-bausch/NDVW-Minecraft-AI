@@ -167,8 +167,8 @@ namespace Voxels
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = vertices[i] + new Vector3(x, y, z); 
-                uvs[i].y = (uvs[i].y / (float) VoxelWorld.BLOCK_TYPES) 
-                    + (blockType * (1.0f / (float) VoxelWorld.BLOCK_TYPES));
+                uvs[i].y = ((uvs[i].y * 64.0f) + ((float) (blockType % 4) * 80.0f)) / 304.0f;
+                uvs[i].x = ((uvs[i].x * 128.0f) + ((float) (blockType / 4) * 144.0f)) / 272.0f;
             }
 
             bool removeFrontFace = world.BlockAt(x - 0, y - 0, z - 1) != VoxelWorld.AIR;

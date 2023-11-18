@@ -6,6 +6,7 @@ public class PlayerMovement : MonoBehaviour
     public float moveSpeed = 7.0f;
     public float jumpForce = 5.0f;
     public float airMultiplier = 0.5f;
+    public float gravity = 9.81f;
 
     [Header("Keybinds")]
     public KeyCode jumpKey = KeyCode.Space;
@@ -46,10 +47,10 @@ public class PlayerMovement : MonoBehaviour
             if (Input.GetKey(jumpKey)) {
                 moveDirection.y = jumpForce;
             }
-            moveDirection.y -= 9.81f * Time.deltaTime;
+            moveDirection.y -= gravity * Time.deltaTime;
             controller.Move(moveDirection * Time.deltaTime);
         } else {
-            moveDirection.y -= 9.81f * Time.deltaTime;
+            moveDirection.y -= gravity * Time.deltaTime;
             controller.Move(moveDirection * Time.deltaTime * airMultiplier);
         }
     }
