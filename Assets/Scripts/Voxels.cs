@@ -66,6 +66,43 @@ namespace Voxels
             mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.CombineMeshes(combine);
 
+            Vector3[] normals = new Vector3[mesh.vertices.Length];
+
+            // Initialize normals
+            for (i = 0; i < normals.Length; i++)
+            {
+                normals[i] = Vector3.zero;
+            }
+
+            // Calculate normals for each triangle
+            for (i = 0; i < mesh.triangles.Length; i += 3)
+            {
+                int index0 = mesh.triangles[i];
+                int index1 = mesh.triangles[i + 1];
+                int index2 = mesh.triangles[i + 2];
+
+                Vector3 v0 = mesh.vertices[index0];
+                Vector3 v1 = mesh.vertices[index1];
+                Vector3 v2 = mesh.vertices[index2];
+
+                // Calculate triangle normal
+                Vector3 triangleNormal = Vector3.Cross(v1 - v0, v2 - v0).normalized;
+
+                // Add the calculated normal to each vertex of the triangle
+                normals[index0] += triangleNormal;
+                normals[index1] += triangleNormal;
+                normals[index2] += triangleNormal;
+            }
+
+            // Normalize the final normals
+            for (i = 0; i < normals.Length; i++)
+            {
+                normals[i] = normals[i].normalized;
+            }
+
+            // Assign calculated normals to the mesh
+            mesh.normals = normals;
+
             MeshFilter meshFilter = parent.AddComponent<MeshFilter>();
             meshFilter.sharedMesh = mesh;
             MeshRenderer meshRenderer = parent.AddComponent<MeshRenderer>();
