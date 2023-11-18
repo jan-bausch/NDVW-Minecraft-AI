@@ -8,9 +8,9 @@ namespace Voxels
     public abstract class VoxelWorld : ScriptableObject
     {
         public const int BLOCK_TYPES = 2;
-        public const int AIR = 0;
-        public const int SOLID = 1;
-        public const int SOLID_PRECIOUS = 2;
+        public const int AIR = -1;
+        public const int SOLID = 0;
+        public const int SOLID_PRECIOUS = 1;
 
         public int xMax, yMax, zMax;
 
