@@ -65,6 +65,7 @@ namespace Environment {
             {
                 // Calculate the average of R, G, B components and pack them into a single int
                 averagedRGB[i] = ((int)(pixels[i].r * 255f) + (int)(pixels[i].g * 255f) + (int)(pixels[i].b * 255f)) / 3;
+                //averagedRGB[i] = (int)(pixels[i].r * 255f);
             }
 
             RenderTexture.active = null;

@@ -16,16 +16,11 @@ namespace Environment
         private TcpListener server;
         private CancellationTokenSource cancellationTokenSource;
 
-        private List<TcpClient> connectedClients = new List<TcpClient>();
-
         private async void Start()
         {
             cancellationTokenSource = new CancellationTokenSource();
             // Start TCP server
-            await StartServerAsync();
-
-            // Start handling sending updates to clients in a separate task
-            _ = Task.Run(async () => await SendUpdatesAsync(), cancellationTokenSource.Token);
+            await StartServerAsync();            
         }
 
         private async Task StartServerAsync()
@@ -41,10 +36,11 @@ namespace Environment
                     TcpClient client = await server.AcceptTcpClientAsync();
                     Debug.Log("Client connected: " + client.Client.RemoteEndPoint);
 
-                    connectedClients.Add(client);
+                    EnvironmentsConductor conductor = gameObject.GetComponent<EnvironmentsConductor>();
 
                     // Handle each client connection in a separate task
-                    _ = Task.Run(() => HandleClientAsync(client), cancellationTokenSource.Token);
+                    _ = Task.Run(() => HandleClientAsync(client, conductor), cancellationTokenSource.Token);
+                    _ = Task.Run(() => SendUpdatesAsync(client, conductor), cancellationTokenSource.Token);
                 }
             }
             catch (Exception e)
@@ -53,18 +49,27 @@ namespace Environment
             }
         }
 
-        private async Task HandleClientAsync(TcpClient client)
+        private async Task HandleClientAsync(TcpClient client, EnvironmentsConductor conductor)
         {
             try
             {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[8];
                 int bytesRead;
                 NetworkStream stream = client.GetStream();
 
                 while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationTokenSource.Token)) > 0)
                 {
-                    string receivedMessage = Encoding.UTF8.GetString(buffer, 0, bytesRead);
-                    Debug.Log("Received message from client: " + receivedMessage);
+                    byte[] firstHalf = new byte[buffer.Length / 2];
+                    byte[] secondHalf = new byte[buffer.Length - firstHalf.Length];
+
+                    Array.Copy(buffer, firstHalf, firstHalf.Length);
+                    Array.Copy(buffer, firstHalf.Length, secondHalf, 0, secondHalf.Length);
+                    
+                    int worldId = BitConverter.ToInt32(firstHalf, 0);
+                    int action = BitConverter.ToInt32(secondHalf, 0);
+                    //Debug.Log("Received message from client: " + worldId + ", " + action);
+
+                    conductor.PushPlayerAction(worldId, action);
                 }
             }
             catch (Exception e)
@@ -73,38 +78,39 @@ namespace Environment
             }
             finally
             {
-                connectedClients.Remove(client);
                 Debug.Log("Client disconnected: " + client.Client.RemoteEndPoint);
                 client.Close();
             }
         }
 
-        private async Task SendUpdatesAsync()
+        private async Task SendUpdatesAsync(TcpClient client, EnvironmentsConductor conductor)
         {
             var cancellationToken = cancellationTokenSource.Token;
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    EnvironmentsConductor conductor = gameObject.GetComponent<EnvironmentsConductor>();
                     var environmentQueues = conductor.GetEnvironmentQueues();
-                    foreach (var queue in environmentQueues)
+                    foreach (var worldId in environmentQueues.Keys)
                     {
-                        if (queue.Value.TryDequeue(out EnvironmentData frameInfo))
+                        //Debug.Log(worldId);
+                        var queue = environmentQueues[worldId];
+                        if (queue.TryDequeue(out EnvironmentData frameInfo))
                         {
                             EnvironmentDataSerializer serializer = new EnvironmentDataSerializer();
 
-                            int imageId = 1;
                             float rewardSignal = frameInfo.rewardSignal;
                             int[] pixelsGrayscale = frameInfo.pixelsGrayscale;
 
                             // Serialize frameInfo to binary
-                            byte[] serializedData = serializer.SerializeFrameInfo(imageId, rewardSignal, pixelsGrayscale);
+                            byte[] serializedData = serializer.SerializeFrameInfo(worldId, rewardSignal, pixelsGrayscale);
 
-                            foreach (TcpClient client in connectedClients)
-                            {
-                                await client.GetStream().WriteAsync(serializedData, 0, serializedData.Length, cancellationToken);
-                            }
+                            byte[] sendData = new byte[sizeof(int) + serializedData.Length];
+                            Buffer.BlockCopy(BitConverter.GetBytes(serializedData.Length), 0, sendData, 0, sizeof(int));
+                            Buffer.BlockCopy(serializedData, 0, sendData, sizeof(int), serializedData.Length);
+
+                            await client.GetStream().WriteAsync(sendData, 0, sendData.Length, cancellationToken);
+                            //Debug.Log("Sent " + serializedData.Length);
                         }
                     }
 

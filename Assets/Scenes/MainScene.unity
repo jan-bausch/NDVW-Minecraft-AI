@@ -748,11 +748,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a878dae0aa7b9442ba53b022f75fab1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fieldOfView: 43.2
+  fieldOfView: 21
   nearClipPlane: 0.3
-  farClipPlane: 50
-  relativePosition: {x: 30, y: 40, z: 30}
-  rotationEulerAngles: {x: 47.4, y: -135, z: 0}
+  farClipPlane: 80
+  relativePosition: {x: 10, y: 54, z: -40}
+  rotationEulerAngles: {x: 40, y: 0, z: 0}
 --- !u!114 &689682571
 MonoBehaviour:
   m_ObjectHideFlags: 0

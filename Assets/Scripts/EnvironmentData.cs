@@ -14,13 +14,13 @@ public class EnvironmentData
 public class EnvironmentDataSerializer
 {
 
-    public byte[] SerializeFrameInfo(int imageId, float rewardSignal, int[] pixelsGrayscale)
+    public byte[] SerializeFrameInfo(int worldId, float rewardSignal, int[] pixelsGrayscale)
     {
         using (MemoryStream memoryStream = new MemoryStream())
         {
             using (BinaryWriter writer = new BinaryWriter(memoryStream))
             {
-                writer.Write(imageId);
+                writer.Write(worldId);
                 writer.Write(rewardSignal);
                 foreach (int pixel in pixelsGrayscale)
                 {
@@ -32,9 +32,9 @@ public class EnvironmentDataSerializer
         }
     }
 
-    public (int imageId, float rewardSignal, int[] pixelsGrayscale) DeserializeFrameInfo(byte[] data)
+    public (int worldId, float rewardSignal, int[] pixelsGrayscale) DeserializeFrameInfo(byte[] data)
     {
-        int imageId;
+        int worldId;
         float rewardSignal;
         int[] pixelsGrayscale;
 
@@ -42,7 +42,7 @@ public class EnvironmentDataSerializer
         {
             using (BinaryReader reader = new BinaryReader(memoryStream))
             {
-                imageId = reader.ReadInt32();
+                worldId = reader.ReadInt32();
                 rewardSignal = reader.ReadSingle();
 
                 int remainingBytes = (int)(memoryStream.Length - memoryStream.Position);
@@ -56,7 +56,7 @@ public class EnvironmentDataSerializer
             }
         }
 
-        return (imageId, rewardSignal, pixelsGrayscale);
+        return (worldId, rewardSignal, pixelsGrayscale);
     }
 }
 
