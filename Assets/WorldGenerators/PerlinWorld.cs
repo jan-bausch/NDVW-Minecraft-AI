@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
-using Voxels;
 using UnityEngine;
+using Voxels;
 
-[CreateAssetMenu(fileName = "NewPerlinWorldGenerator.Asset", menuName = "WorldGenerator/Perlin")]
+[CreateAssetMenu(fileName = "NewPerlinWorldGenerator.Asset", menuName = "WorldGenerator/PerlinWorld")]
 public class PerlinWorld : VoxelWorld
 {
     public PerlinWorld(int xMax, int yMax, int zMax) : base(xMax, yMax, zMax)
@@ -17,10 +17,21 @@ public class PerlinWorld : VoxelWorld
             return VoxelWorld.AIR;
         }
 
-        float perlinValue = Mathf.PerlinNoise(seed * 100 + x * 0.1f, seed * 100 + z * 0.1f); // Generate Perlin noise
-        if (y < 10 + perlinValue * 10)
+        float perlinValue = Mathf.PerlinNoise(seed * 100 + x * 0.2f, seed * 100 + z * 0.2f); 
+        float normalizedY = (float)y / (float)yMax;
+
+        if (y < 10 + perlinValue * 10 * normalizedY)
         {
-            return VoxelWorld.SOLID;
+            float preciousProbability = Mathf.Lerp(0.001f, 0.02f, normalizedY);
+
+            if (Random.value < preciousProbability)
+            {
+                return VoxelWorld.SOLID_PRECIOUS;
+            }
+            else
+            {
+                return VoxelWorld.SOLID;
+            }
         }
 
         return VoxelWorld.AIR;
