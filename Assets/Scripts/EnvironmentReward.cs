@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Environment {
 public class EnvironmentReward : MonoBehaviour
 {
-    float GetReward() {
+    public float GetReward() {
         return 0.0f;
     }
 }

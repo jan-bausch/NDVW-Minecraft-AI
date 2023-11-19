@@ -1,50 +1,127 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using Environment;
 using System;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using System.Linq;
+using UnityEngine;
 
-public class EnvironmentsServer : MonoBehaviour
+namespace Environment
 {
-    private int frameCount = 0;
-
-    void Update()
+    public class EnvironmentsServer : MonoBehaviour
     {
-        frameCount++;
+        private TcpListener server;
+        private CancellationTokenSource cancellationTokenSource;
 
-        // Find the "Environments" GameObject in the scene
-        GameObject environments = GameObject.Find("Environments");
+        private List<TcpClient> connectedClients = new List<TcpClient>();
 
-        // Ensure "Environments" is found before proceeding
-        if (environments != null)
+        private async void Start()
         {
-            Transform[] children = environments.GetComponentsInChildren<Transform>()
-                .Where(child => child != environments.transform && child.name.StartsWith("Environment_"))
-                .ToArray();
+            cancellationTokenSource = new CancellationTokenSource();
+            // Start TCP server
+            await StartServerAsync();
 
-            foreach (Transform env in children)
+            // Start handling sending updates to clients in a separate task
+            _ = Task.Run(async () => await SendUpdatesAsync(), cancellationTokenSource.Token);
+        }
+
+        private async Task StartServerAsync()
+        {
+            try
             {
-                string[] nameParts = env.name.Split('_'); // Split the name by underscore
-                int x = 0, z = 0;
-                int.TryParse(nameParts[1], out x);
-                int.TryParse(nameParts[2], out z);
-                int gridSize = (int)Math.Sqrt(children.Length);
-                int id = x * gridSize + z;
-                Debug.Log(gridSize);
-                if (frameCount % children.Length != id) continue;
-                EnvironmentCamera cam = env.gameObject.GetComponent<EnvironmentCamera>();
-                int[] pixelsGrayscale = cam.GetPixelsGrayscale();
-                Debug.Log("Frame:" + frameCount + " Child:" + id + "(" + x + ", " + z + ")" + " Pixels count: " + pixelsGrayscale.Length);
-            
-                Transform playerTransform = env.Find("Player");
-                EnvironmentPlayer player = playerTransform.gameObject.GetComponent<EnvironmentPlayer>();
-                player.MoveUpdate();
+                server = new TcpListener(IPAddress.Any, 8080);
+                server.Start();
+                Debug.Log("Server started. Waiting for connections...");
 
-                EnvironmentReward rewardEmitter = env.gameObject.GetComponent<EnvironmentReward>();
-                float rewardSignal = rewardEmitter.GetReward();
-                Debug.Log("Frame:" + frameCount + " Child:" + id + "(" + x + ", " + z + ")" + "Reward: " + rewardSignal);
+                while (true)
+                {
+                    TcpClient client = await server.AcceptTcpClientAsync();
+                    Debug.Log("Client connected: " + client.Client.RemoteEndPoint);
+
+                    connectedClients.Add(client);
+
+                    // Handle each client connection in a separate task
+                    _ = Task.Run(() => HandleClientAsync(client), cancellationTokenSource.Token);
+                }
             }
+            catch (Exception e)
+            {
+                Debug.LogError("Server error: " + e.Message);
+            }
+        }
+
+        private async Task HandleClientAsync(TcpClient client)
+        {
+            try
+            {
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                NetworkStream stream = client.GetStream();
+
+                while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationTokenSource.Token)) > 0)
+                {
+                    string receivedMessage = Encoding.UTF8.GetString(buffer, 0, bytesRead);
+                    Debug.Log("Received message from client: " + receivedMessage);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Client error: " + e.Message);
+            }
+            finally
+            {
+                connectedClients.Remove(client);
+                Debug.Log("Client disconnected: " + client.Client.RemoteEndPoint);
+                client.Close();
+            }
+        }
+
+        private async Task SendUpdatesAsync()
+        {
+            var cancellationToken = cancellationTokenSource.Token;
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    EnvironmentsConductor conductor = gameObject.GetComponent<EnvironmentsConductor>();
+                    var environmentQueues = conductor.GetEnvironmentQueues();
+                    foreach (var queue in environmentQueues)
+                    {
+                        if (queue.Value.TryDequeue(out EnvironmentData frameInfo))
+                        {
+                            EnvironmentDataSerializer serializer = new EnvironmentDataSerializer();
+
+                            int imageId = 1;
+                            float rewardSignal = frameInfo.rewardSignal;
+                            int[] pixelsGrayscale = frameInfo.pixelsGrayscale;
+
+                            // Serialize frameInfo to binary
+                            byte[] serializedData = serializer.SerializeFrameInfo(imageId, rewardSignal, pixelsGrayscale);
+
+                            foreach (TcpClient client in connectedClients)
+                            {
+                                await client.GetStream().WriteAsync(serializedData, 0, serializedData.Length, cancellationToken);
+                            }
+                        }
+                    }
+
+                    // await Task.Delay(1000/60, cancellationToken);
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Error sending updates: " + e.Message);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Cleanup resources when the script is destroyed
+            cancellationTokenSource?.Cancel();
+            server?.Stop();
         }
     }
 }
