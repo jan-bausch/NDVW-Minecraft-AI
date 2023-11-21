@@ -17,14 +17,14 @@ public class BlockInteraction : MonoBehaviour
             Ray ray = playerCamera.ScreenPointToRay(Input.mousePosition);
             RaycastHit hit;
 
-            Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, rayTime);
+            // Debug.DrawRay(ray.origin, ray.direction * 100f, Color.red, rayTime);
 
             if (Physics.Raycast(ray, out hit, range))
             {
                 Vector3 hitPointOnMesh = hit.point;
 
                 // Round the coordinates tFloorToInto integers
-                int roundedX = Mathf.(hitPointOnMesh.x);
+                int roundedX = Mathf.FloorToInt(hitPointOnMesh.x);
                 int roundedY = Mathf.FloorToInt(hitPointOnMesh.y);
                 int roundedZ = Mathf.FloorToInt(hitPointOnMesh.z);
 
