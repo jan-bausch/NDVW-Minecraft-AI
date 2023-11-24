@@ -17,7 +17,10 @@ public class PerlinWorld : VoxelWorld
             return VoxelWorld.AIR;
         }
 
-        float perlinValue = Mathf.PerlinNoise(seed * 100 + x * 0.1f, seed * 100 + z * 0.1f); // Generate Perlin noise
+        int seedX = (seed / 3162277) - (3162277 / 2);
+        int seedY = (seed % 3162277) - (3162277 / 2);
+        float perlinValue = Mathf.PerlinNoise(seedX + x * 0.1f, seedY + z * 0.1f); // Generate Perlin noise
+        
         if (y < 10 + perlinValue * 10)
         {
             return VoxelWorld.SOLID;

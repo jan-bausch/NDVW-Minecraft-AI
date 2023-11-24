@@ -65,11 +65,11 @@ namespace Environment
                     Array.Copy(buffer, firstHalf, firstHalf.Length);
                     Array.Copy(buffer, firstHalf.Length, secondHalf, 0, secondHalf.Length);
                     
-                    int worldId = BitConverter.ToInt32(firstHalf, 0);
-                    int action = BitConverter.ToInt32(secondHalf, 0);
+                    int target = BitConverter.ToInt32(firstHalf, 0);
+                    int request = BitConverter.ToInt32(secondHalf, 0);
                     //Debug.Log("Received message from client: " + worldId + ", " + action);
-
-                    conductor.PushPlayerAction(worldId, action);
+                    
+                    conductor.HandleIncomingRequest(target, request);
                 }
             }
             catch (Exception e)
@@ -91,7 +91,7 @@ namespace Environment
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var environmentQueues = conductor.GetEnvironmentQueues();
-                    foreach (var worldId in environmentQueues.Keys)
+                    foreach (var worldId in environmentQueues.Keys.ToList())
                     {
                         //Debug.Log(worldId);
                         var queue = environmentQueues[worldId];
@@ -119,7 +119,8 @@ namespace Environment
             }
             catch (Exception e)
             {
-                Debug.LogError("Error sending updates: " + e.Message);
+                Debug.LogError("Error sending updates: " + e.Message + e.StackTrace);
+                
             }
         }
 

@@ -17,24 +17,70 @@ namespace Environment
 
         private int frameCount = 0;
 
-        private Dictionary<int, ConcurrentQueue<EnvironmentData>> environmentQueues = new Dictionary<int, ConcurrentQueue<EnvironmentData>>();
+        private ConcurrentDictionary<int, ConcurrentQueue<EnvironmentData>> environmentQueues = new ConcurrentDictionary<int, ConcurrentQueue<EnvironmentData>>();
 
-        private Dictionary<int, ConcurrentQueue<int>> playerActionQueues = new Dictionary<int, ConcurrentQueue<int>>();
+        private ConcurrentDictionary<int, ConcurrentQueue<int>> playerActionQueues = new ConcurrentDictionary<int, ConcurrentQueue<int>>();
+        private ConcurrentQueue<(int, int)> targetedRequestsQueue = new ConcurrentQueue<(int, int)>();
 
 
-        public Dictionary<int, ConcurrentQueue<EnvironmentData>> GetEnvironmentQueues()
+        void Start()
+        {
+            if (!queueControlled)
+            {
+                ResetAndGenerate(4, 0);
+            }
+        }
+
+        public ConcurrentDictionary<int, ConcurrentQueue<EnvironmentData>> GetEnvironmentQueues()
         {
             return environmentQueues;
         }
 
-        public void PushPlayerAction(int worldId, int action)
+        public void HandleIncomingRequest(int target, int request)
         {
-            playerActionQueues[worldId].Enqueue(action);
+            if (target >= 0)
+            {
+                int worldId = target;
+                int action = request;
+                playerActionQueues[worldId].Enqueue(action);
+            } else 
+            {
+                targetedRequestsQueue.Enqueue((target*-1, request));
+            }
         }
 
+        private void ResetAndGenerate(int worldsCount, int seed)
+        {
+            for (int i = 0; i < worldsCount; i++)
+            {
+                environmentQueues[i] = new ConcurrentQueue<EnvironmentData>();
+                playerActionQueues[i] = new ConcurrentQueue<int>();
+                playerActionQueues[i].Enqueue(-1);
+            }
+            // environmentQueues = new Dictionary<int, ConcurrentQueue<EnvironmentData>>();
+            // playerActionQueues = new Dictionary<int, ConcurrentQueue<int>>();
+            targetedRequestsQueue = new ConcurrentQueue<(int, int)>();
+
+            frameCount = 0;
+
+            var initializer = gameObject.GetComponent<EnvironmentsInitialization>();
+            initializer.Generate(worldsCount, seed);
+        }
 
         void Update()
         {
+            var targetedRequest = (-1, -1);
+            if (targetedRequestsQueue.TryDequeue(out targetedRequest))
+            {
+                // for now only regenerate requests exist
+                var (target, request) = targetedRequest;
+                int seed = target;
+                int worldsCount = request;
+
+                ResetAndGenerate(worldsCount, seed);
+                return;
+            }
+
             frameCount++;
 
             // Find the "Environments" GameObject in the scene
