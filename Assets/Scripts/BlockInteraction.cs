@@ -4,6 +4,7 @@ using UnityEngine;
 
 using Environment;
 using WorldEditing;
+using Voxels;
 
 public class BlockInteraction : MonoBehaviour
 {
@@ -35,27 +36,11 @@ public class BlockInteraction : MonoBehaviour
 
                 Debug.Log(roundedHitPoint);
 
-                // editableWorld.SetBlock(roundedX, roundedY, roundedZ, -1);
-                // EnvironmentWorldGeneration environmentWorldGeneration = GetComponent<EnvironmentWorldGeneration>();
                 EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
-                // Debug.Log(environmentWorldGeneration);
                 EditableWorld world = environmentWorldGeneration.world;
-                // Debug.Log(world);
                 world.SetBlock(roundedX, roundedY, roundedZ, -1);
-                Debug.Log(gameObject);
-
-                // VoxelRenderer.RenderWorld(gameObject, world, material);
+                VoxelRenderer.RenderWorld(environmentWorldGeneration.getGameObject(), world, environmentWorldGeneration.material);
             }
         }
     }
-
-    // private void placeCursorBlocks(){
-    //     float step = checkIncrement;
-    //     Vector3 lastPos = new Vector3;
-
-    //     while (step < reach) {
-    //         Vector3 pos = playerCamera.position * (playerCamera.forward * step)
-
-    //     }
-    // }
 }
