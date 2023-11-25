@@ -183,7 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa1edbe2eae55a646aa71a90697e63a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSize: 3
+  gridSize: 1
   spacing: 25
 --- !u!4 &110650677
 Transform:
@@ -319,6 +319,7 @@ GameObject:
   - component: {fileID: 509222104}
   - component: {fileID: 509222105}
   - component: {fileID: 509222106}
+  - component: {fileID: 509222107}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -388,6 +389,21 @@ MonoBehaviour:
   gravity: 12
   jumpKey: 32
   orientation: {fileID: 81073077}
+--- !u!114 &509222107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 509222101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b2a75c2bb94fbda4295476b7bff3c79c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerCamera: {fileID: 559960030}
+  rayTime: 10
+  range: 5
 --- !u!1 &527874842
 GameObject:
   m_ObjectHideFlags: 0
@@ -704,7 +720,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: 4bf30e54f75abc84180c217ef7b72064, type: 2}
-  baseWorld: {fileID: 11400000, guid: 976281fa11e82ce4b92f3c8624fd1f4a, type: 2}
+  baseWorld: {fileID: 11400000, guid: f85cd9f6b4963c74da5b7091c374ca28, type: 2}
 --- !u!1 &704212823
 GameObject:
   m_ObjectHideFlags: 0
