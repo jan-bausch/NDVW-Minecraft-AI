@@ -10,6 +10,7 @@ import csv
 import time
 import numpy as np
 import copy
+import sqlite3
 
 # TCP server address and port
 SERVER_ADDRESS = "192.168.1.49"
@@ -17,10 +18,98 @@ SERVER_PORT = 8080
 
 SEED = 3
 PARALLEL_EPISODES = 100
+TRAIN_VALID_SPLIT = 0.8
+TRAIN_EPISODES = int(PARALLEL_EPISODES * TRAIN_VALID_SPLIT)
+VALID_EPISODES = PARALLEL_EPISODES - TRAIN_EPISODES
 STEPS_PER_EPISODE = 500
+
 
 def random_model(_worlds_states, _worlds_rewards):
     return [random.randint(0, 4) for _ in range(PARALLEL_EPISODES)]
+
+
+def save_to_database(
+    conn, previous_states, previous_actions, worlds_rewards, worlds_states
+):
+    c = conn.cursor()
+    for i in range(TRAIN_EPISODES):
+        previous_state_str = ",".join(map(str, previous_states[i]))
+        world_state_str = ",".join(map(str, worlds_states[i]))
+        c.execute(
+            """
+                  INSERT INTO memory_replay (previous_state, previous_action, world_reward, world_state)
+                  VALUES (?, ?, ?, ?)
+                  """,
+            (
+                previous_state_str,
+                previous_actions[i],
+                worlds_rewards[i],
+                world_state_str,
+            ),
+        )
+    conn.commit()
+
+
+def get_memory_size(conn):
+    c = conn.cursor()
+    c.execute("""SELECT COUNT(*) FROM memory_replay""")
+    return c.fetchone()[0]
+
+
+def manage_database_size(conn):
+    c = conn.cursor()
+    c.execute(
+        """
+              SELECT COUNT(*) FROM memory_replay
+              """
+    )
+    count = c.fetchone()[0]
+    if count > MEMORY_REPLAY_SIZE:
+        c.execute(
+            """
+                  DELETE FROM memory_replay
+                  WHERE rowid IN (
+                      SELECT rowid FROM memory_replay ORDER BY rowid ASC LIMIT ?
+                  )
+                  """,
+            (count - MEMORY_REPLAY_SIZE,),
+        )
+        conn.commit()
+
+
+def sample_from_database(conn, batch_size):
+    c = conn.cursor()
+    c.execute(
+        """
+              SELECT previous_state, previous_action, world_reward, world_state
+              FROM memory_replay
+              ORDER BY RANDOM()
+              LIMIT ?
+              """,
+        (batch_size,),
+    )
+    sampled_data = c.fetchall()
+
+    # Parse strings back to lists of integers
+    (
+        mem_previous_states,
+        mem_previous_actions,
+        mem_worlds_rewards,
+        mem_worlds_states,
+    ) = zip(*sampled_data)
+    mem_previous_states = [
+        list(map(int, state.split(","))) for state in mem_previous_states
+    ]
+    mem_worlds_states = [
+        list(map(int, state.split(","))) for state in mem_worlds_states
+    ]
+
+    return (
+        list(mem_previous_states),
+        list(mem_previous_actions),
+        list(mem_worlds_rewards),
+        list(mem_worlds_states),
+    )
 
 
 class DQN(nn.Module):
@@ -64,13 +153,16 @@ OUTPUT_DIM = 5  # Actions: 0 to 4
 model = DQN(INPUT_DIM, OUTPUT_DIM)
 model.to(device)
 target_model = copy.deepcopy(model)
+criterion = nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters())
 
 BASE_EPSILON = 1
 MIN_EPSILON = 0.1
-BATCH_SIZE = 2048
+BATCH_SIZE = 128
 EXPLORATORY_FRAMES = 1_000_000
-MEMORY_REPLAY_SIZE = 400_000
-C = 10_240
+MEMORY_REPLAY_SIZE = 1_000_000
+MAX_TARGET_INDEPENDENCE_FRAMES = 128
+target_independence_frames = 0
 
 previous_states = None
 previous_actions = None
@@ -79,7 +171,6 @@ total_q_values = 0
 total_rewards = 0
 steps_counter = 0
 episodes_counter = 0
-memory_replay = ([], [], [], [])
 trained_frames_count = 0
 
 
@@ -99,12 +190,13 @@ def load_weights(model, weights_path):
 last_times = [time.time() for _ in range(100)]
 
 
-def neural_model(worlds_states, worlds_rewards):
+def neural_model(conn, worlds_states, worlds_rewards):
     global previous_states
     global previous_actions
     global last_times
     global target_model
     global trained_frames_count
+    global target_independence_frames
 
     print(f"Step: {steps_counter}")
 
@@ -114,42 +206,40 @@ def neural_model(worlds_states, worlds_rewards):
     total_calls = len(last_times) - 1
     print(f"Calls per second: {total_calls / total_time}")
 
-    if previous_states is not None:
-        for i in range(PARALLEL_EPISODES):
-            if len(memory_replay) >= MEMORY_REPLAY_SIZE:
-                if worlds_rewards[i] < -10 or random.random() < 0.5:
-                    continue
-                memory_replay[0].pop(0)
-                memory_replay[1].pop(0)
-                memory_replay[2].pop(0)
-                memory_replay[3].pop(0)
-            memory_replay[0].append(previous_states[i])
-            memory_replay[1].append(previous_actions[i])
-            memory_replay[2].append(worlds_rewards[i])
-            memory_replay[3].append(worlds_states[i])
+    if previous_states is not None and not args.no_train:
+        save_to_database(
+            conn,
+            previous_states[:TRAIN_EPISODES],
+            previous_actions[:TRAIN_EPISODES],
+            worlds_rewards[:TRAIN_EPISODES],
+            worlds_states[:TRAIN_EPISODES],
+        )
+        manage_database_size(conn)
 
     loss_value = None
-    print(f"Memory size: {len(memory_replay[0])}")
-    if len(memory_replay[0]) > BATCH_SIZE:
+    mem_size = get_memory_size(conn)
+    print(f"Memory size: {mem_size}")
+    if mem_size > BATCH_SIZE:
         # sample minibatch
-        indices = [i for i in range(len(memory_replay[0]))]
-        minibatch_indices = random.sample(indices, BATCH_SIZE)
         (
             mem_previous_states,
             mem_previous_actions,
             mem_worlds_rewards,
             mem_worlds_states,
-        ) = (
-            [memory_replay[0][i] for i in minibatch_indices],
-            [memory_replay[1][i] for i in minibatch_indices],
-            [memory_replay[2][i] for i in minibatch_indices],
-            [memory_replay[3][i] for i in minibatch_indices],
+        ) = sample_from_database(conn, BATCH_SIZE)
+        targets = torch.tensor(
+            [0 for _ in range(BATCH_SIZE)], dtype=torch.float32, device=device
         )
-        targets = torch.tensor([0 for _ in range(BATCH_SIZE)], dtype=torch.float32, device=device)
-        predictions = torch.tensor([0 for _ in range(BATCH_SIZE)], dtype=torch.float32, device=device)
+        predictions = torch.tensor(
+            [0 for _ in range(BATCH_SIZE)], dtype=torch.float32, device=device
+        )
         gamma = 0.95
-        mem_previous_worlds_states_tensor = torch.tensor(mem_previous_states, dtype=torch.float32, device=device)
-        mem_worlds_states_tensor = torch.tensor(mem_worlds_states, dtype=torch.float32, device=device)
+        mem_previous_worlds_states_tensor = torch.tensor(
+            mem_previous_states, dtype=torch.float32, device=device
+        )
+        mem_worlds_states_tensor = torch.tensor(
+            mem_worlds_states, dtype=torch.float32, device=device
+        )
         prediction_actions_values = model(mem_previous_worlds_states_tensor)
         target_actions_values = target_model(mem_worlds_states_tensor)
 
@@ -158,15 +248,13 @@ def neural_model(worlds_states, worlds_rewards):
         variances = torch.var(prediction_actions_values, dim=0)
         print(f"Q values min variance: {variances.min().item()}")
 
-        for i in range(PARALLEL_EPISODES):
+        for i in range(BATCH_SIZE):
             target_action = torch.argmax(target_actions_values[i]).item()
             target_action_value = target_actions_values[i][target_action]
             mem_action = mem_previous_actions[i]
             predictions[i] = prediction_actions_values[i][mem_action]
             targets[i] = mem_worlds_rewards[i] + gamma * target_action_value
 
-        criterion = nn.MSELoss()
-        optimizer = torch.optim.Adam(model.parameters())
         loss = criterion(predictions, targets)
         optimizer.zero_grad()
         loss.backward()
@@ -174,55 +262,70 @@ def neural_model(worlds_states, worlds_rewards):
         loss_value = loss.item()
 
         trained_frames_count += BATCH_SIZE
+        target_independence_frames += BATCH_SIZE
 
-        if trained_frames_count % C == 0:
+        print(f"Trained frames: {trained_frames_count}")
+        if target_independence_frames >= MAX_TARGET_INDEPENDENCE_FRAMES:
+            print("Updating target model")
+            target_independence_frames = 0
             target_model = copy.deepcopy(model)
 
-    worlds_states_tensor = torch.tensor(worlds_states, dtype=torch.float32, device=device)
+    worlds_states_tensor = torch.tensor(
+        worlds_states, dtype=torch.float32, device=device
+    )
     actions_values = model(worlds_states_tensor)
     actions = [None for _ in range(PARALLEL_EPISODES)]
     exploration_progress = min(1, trained_frames_count / EXPLORATORY_FRAMES)
     print(f"Exploration progress: {exploration_progress}")
     epsilon = BASE_EPSILON - exploration_progress * (BASE_EPSILON - MIN_EPSILON)
-    for i in range(PARALLEL_EPISODES):
+    for i in range(TRAIN_EPISODES):
         if random.random() < epsilon:
             actions[i] = random.randint(0, 4)
         else:
             actions[i] = torch.argmax(actions_values[i]).item()
+    for i in range(TRAIN_EPISODES, PARALLEL_EPISODES):
+        actions[i] = torch.argmax(actions_values[i]).item()
 
     previous_states = copy.deepcopy(worlds_states)
     previous_actions = copy.deepcopy(actions)
 
+    if args.no_train:
+        return actions
+
     with open(args.csv_filename, mode="a") as file:
-        avg_q_value = torch.mean(actions_values).item()
-        avg_reward = sum(worlds_rewards) / len(worlds_rewards)
+        avg_train_q_value = torch.mean(actions_values[:TRAIN_EPISODES]).item()
+        avg_q_value = torch.mean(actions_values[TRAIN_EPISODES:]).item()
+        avg_train_reward = sum(worlds_rewards[:TRAIN_EPISODES]) / TRAIN_EPISODES
+        avg_reward = sum(worlds_rewards[TRAIN_EPISODES:]) / VALID_EPISODES
 
         csv_writer = csv.writer(file)
         file.seek(0, 2)  # Move to the end of the file
         if file.tell() == 0:  # Check if the file is empty
             csv_writer.writerow(
-                ["Epoch", "Average_Q_value", "Average_Reward", "Loss", "Calls_per_sec"]
+                ["Epoch", "Average_Q_Value", "Average_Train_Q_Value", "Average_Reward", "Average_Train_Reward", "Loss", "Calls_per_sec"]
             )
         csv_writer.writerow(
             [
                 steps_counter,
                 avg_q_value,
+                avg_train_q_value,
                 avg_reward,
+                avg_train_reward,
                 loss_value,
                 total_calls / total_time,
             ]
         )
         print(
-            f"Average Q-value: {avg_q_value}\nAverage reward: {avg_reward}\nLoss: {loss_value}"
+            f"Average Q-value: {avg_q_value}\nAverage Train Q-value: {avg_train_q_value}\nAverage reward: {avg_reward}\nAverage Train reward: {avg_train_reward}\nLoss: {loss_value}"
         )
 
-    if trained_frames_count % 102_400 == 0:
+    if trained_frames_count % 50 * BATCH_SIZE == 0 and trained_frames_count > 0:
         save_weights(model, trained_frames_count, steps_counter)
 
     return actions
 
 
-def receive_frame_data():
+def receive_frame_data(conn):
     global steps_counter
     global episodes_counter
 
@@ -278,12 +381,17 @@ def receive_frame_data():
             # png_path = f'Temp/Py/frame_{frames_count}_world_{world_id}.png'
             # image.save(png_path)
 
-            if not episode_changing_now and steps_counter % STEPS_PER_EPISODE == STEPS_PER_EPISODE - 1:
+            if (
+                not episode_changing_now
+                and steps_counter % STEPS_PER_EPISODE == STEPS_PER_EPISODE - 1
+            ):
                 episodes_counter += 1
 
                 worlds_data = [[] for _ in range(PARALLEL_EPISODES)]
                 client_socket.sendall(
-                    struct.pack("<ii", -1 * (SEED + episodes_counter), PARALLEL_EPISODES)
+                    struct.pack(
+                        "<ii", -1 * (SEED + episodes_counter), PARALLEL_EPISODES
+                    )
                 )
                 print("New episode")
                 episode_changing_now = True
@@ -308,7 +416,7 @@ def receive_frame_data():
                     worlds_rewards[world_id] = worlds_data[world_id][0]["reward"]
                     worlds_data[world_id].pop(0)
 
-                actions = neural_model(worlds_states, worlds_rewards)
+                actions = neural_model(conn, worlds_states, worlds_rewards)
                 print("sending actions")
                 for world_id in range(PARALLEL_EPISODES):
                     client_socket.sendall(
@@ -336,17 +444,47 @@ if __name__ == "__main__":
         default="averages.csv",
         help="Path to CSV file to store averages",
     )
+    parser.add_argument(
+        "-d",
+        "--db",
+        type=str,
+        default="memory_replay.db",
+        help="Path to SQLITEDB file to store memory replay",
+    )
+    parser.add_argument(
+        "-n",
+        "--no_train",
+        action='store_true',
+        help="Whether to disable learning",
+    )
     args = parser.parse_args()
+
+    conn = sqlite3.connect(args.db)
+
+    c = conn.cursor()
+
+    # Create a table to store memory replay tuples if it doesn't exist
+    c.execute(
+        """
+            CREATE TABLE IF NOT EXISTS memory_replay (
+                previous_state TEXT,
+                previous_action INTEGER,
+                world_reward FLOAT,
+                world_state TEXT
+            )
+            """
+    )
 
     if args.load_weights:
         # Load weights if provided through command line arguments
         snapshot_epochs = int(args.load_weights.split("_")[-1][:-3])
         steps_counter = snapshot_epochs
-        episodes_counter = steps_counter / STEPS_PER_EPISODE
+        trained_frames_count = int((snapshot_epochs-(BATCH_SIZE/PARALLEL_EPISODES)) * BATCH_SIZE)
+        episodes_counter = int(steps_counter / STEPS_PER_EPISODE)
         print(
-            f"Loading weights from epoch {snapshot_epochs}, episode {episodes_counter}"
+            f"Loading weights from epoch {snapshot_epochs}, episode {episodes_counter}, trained frames {trained_frames_count}"
         )
         load_weights(model, args.load_weights)
         target_model = copy.deepcopy(model)
 
-    receive_frame_data()
+    receive_frame_data(conn)
