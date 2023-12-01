@@ -20,6 +20,10 @@ namespace Environment {
             VoxelRenderer.RenderWorld(gameObject, world, material);
         }
 
+        public void UpdateEnvironment(){
+            VoxelRenderer.UpdateWorld(gameObject, world, material);
+        }
+
         public GameObject getGameObject(){
             return gameObject;
         }
