@@ -13,9 +13,13 @@ public class MainMenuScript : MonoBehaviour
     public Slider frequencySlider;
     public Text frequencyText;
 
+    public Button startGameButton;
+
     public GameObject gameScene;
 
     public Text startGameButtonText;
+
+    public UIManager uiManager;
 
     void Start()
     {
@@ -32,13 +36,19 @@ public class MainMenuScript : MonoBehaviour
         frequencySlider.value = 0.5f;
         startGameButtonText.text = "Start Game";
 
+        uiManager.UpdateNumberOfCreepers(numberOfCreepersSlider.value);
+        uiManager.UpdateSizeOfWorld(sizeOfWorldSlider.value);
+        uiManager.UpdateFrequencyOfPreciousBlocks(frequencySlider.value);
+
         UpdateSliderTexts();
 
         numberOfCreepersSlider.onValueChanged.AddListener(OnNumberOfCreepersValueChanged);
         sizeOfWorldSlider.onValueChanged.AddListener(OnSizeOfWorldValueChanged);
         frequencySlider.onValueChanged.AddListener(OnFrequencyValueChanged);
-    }
 
+        startGameButton.onClick.AddListener(StartGame);
+
+    }
     public void StartGame()
     {
         PlayerPrefs.SetInt("NumberOfCreepers", Mathf.RoundToInt(numberOfCreepersSlider.value));
@@ -58,17 +68,20 @@ public class MainMenuScript : MonoBehaviour
     {
         numberOfCreepersSlider.value = Mathf.Clamp(Mathf.RoundToInt(value), numberOfCreepersSlider.minValue, numberOfCreepersSlider.maxValue);
         UpdateSliderTexts();
+        uiManager.UpdateNumberOfCreepers(numberOfCreepersSlider.value);
     }
 
     public void OnSizeOfWorldValueChanged(float value)
     {
         sizeOfWorldSlider.value = Mathf.Clamp(Mathf.RoundToInt(value), sizeOfWorldSlider.minValue, sizeOfWorldSlider.maxValue);
         UpdateSliderTexts(); 
+        uiManager.UpdateSizeOfWorld(sizeOfWorldSlider.value);
     }
 
     public void OnFrequencyValueChanged(float value)
     {
         frequencySlider.value = Mathf.Clamp(Mathf.Round(value / 0.05f) * 0.05f, frequencySlider.minValue, frequencySlider.maxValue);
         UpdateSliderTexts();
+        uiManager.UpdateFrequencyOfPreciousBlocks(frequencySlider.value);
     }
 }
