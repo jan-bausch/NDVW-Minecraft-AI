@@ -5,21 +5,33 @@ using UnityEngine;
 public class CreeperExplode : MonoBehaviour
 {
 
-    public AudioSource audioSource;
+    private AudioSource audioSource;
 
     void Start()
     {
         audioSource = GetComponent<AudioSource>();
     }
 
-    void OnCollisionEnter(Collision other)
+    void OnTriggerEnter(Collider other)
     {
-        Debug.Log("Test");
-        Destroy(gameObject);
         if (other.gameObject.name == "Player")
         {
+            Debug.Log("Player-Creeper collision");
+
+            // Animate explosion
+            ParticleSystem exp = GetComponent<ParticleSystem>();
+            exp.Play();
             audioSource.Play();
-            Destroy(gameObject);
+
+            // Destory Creeper after audio clip ended
+            Invoke("OnCreeperExploded", audioSource.clip.length);
+            // Destroy player
+            Destroy(other.gameObject);
         }
-    }   
+    }
+
+    void OnCreeperExploded()
+    {
+        Destroy(gameObject);
+    }
 }

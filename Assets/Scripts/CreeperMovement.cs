@@ -32,7 +32,7 @@ public class CreeperMovement : MonoBehaviour
         }
 
         // Check if player is close
-        if ((target.transform.position - transform.position).magnitude < detectionRadius)
+        if (target && ((target.transform.position - transform.position).magnitude < detectionRadius))
         {
             // Target player
             transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
