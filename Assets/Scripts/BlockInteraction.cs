@@ -61,6 +61,15 @@ public class BlockInteraction : MonoBehaviour
         if (result != null){
             (Vector3 pos, Vector3 lastPos) = result.Value;
             Debug.Log(pos + " " + lastPos);
+
+            int roundedX = Mathf.FloorToInt(lastPos.x);
+            int roundedY = Mathf.FloorToInt(lastPos.y);
+            int roundedZ = Mathf.FloorToInt(lastPos.z);
+
+            // only one world
+            EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
+            EditableWorld world = environmentWorldGeneration.world;
+            world.SetBlock(roundedX, roundedY, roundedZ, VoxelWorld.SOLID_PRECIOUS);
         }
     }
 
@@ -69,6 +78,18 @@ public class BlockInteraction : MonoBehaviour
         if (result != null){
             (Vector3 pos, Vector3 lastPos) = result.Value;
             Debug.Log(pos + " " + lastPos);
+
+            
+            int roundedX = Mathf.FloorToInt(pos.x);
+            int roundedY = Mathf.FloorToInt(pos.y);
+            int roundedZ = Mathf.FloorToInt(pos.z);
+            
+            // only one world
+            EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
+            EditableWorld world = environmentWorldGeneration.world;
+            world.SetBlock(roundedX, roundedY, roundedZ, VoxelWorld.AIR);
+
+
             // int roundedX = Mathf.FloorToInt(pos.x);
             // int roundedY = Mathf.FloorToInt(pos.y);
             // int roundedZ = Mathf.FloorToInt(pos.z);

@@ -51,6 +51,11 @@ namespace WorldEditing
                 listener.OnBlockUpdate(x, y, z, oldBlock, block);
             }
         }
+
+        public void Subscribe(EditableWorldListener listener)
+        {
+            listeners.Add(listener);
+        }
     }
 
     public interface EditableWorldListener 
