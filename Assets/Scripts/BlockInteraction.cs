@@ -69,26 +69,26 @@ public class BlockInteraction : MonoBehaviour
         if (result != null){
             (Vector3 pos, Vector3 lastPos) = result.Value;
             Debug.Log(pos + " " + lastPos);
-            int roundedX = Mathf.FloorToInt(pos.x);
-            int roundedY = Mathf.FloorToInt(pos.y);
-            int roundedZ = Mathf.FloorToInt(pos.z);
-            EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
-            EditableWorld world = environmentWorldGeneration.world;
+            // int roundedX = Mathf.FloorToInt(pos.x);
+            // int roundedY = Mathf.FloorToInt(pos.y);
+            // int roundedZ = Mathf.FloorToInt(pos.z);
+            // EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
+            // EditableWorld world = environmentWorldGeneration.world;
             
-            Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
-            world.SetBlock(roundedX, roundedY, roundedZ, 1);
-            Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
+            // Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
+            // world.SetBlock(roundedX, roundedY, roundedZ, 1);
+            // Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
             // environmentWorldGeneration.UpdateEnvironment();
             // Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
 
             // VoxelRenderer.UpdateWorld(environmentWorldGeneration.getGameObject(), world, environmentWorldGeneration.material);  
-            GameObject voxel = VoxelRenderer.renderVoxel(world, roundedX, roundedY, roundedZ);
-            if (voxel != null) 
-            {
-                voxel.transform.SetParent(environmentWorldGeneration.getGameObject().transform);
-            }
-            VoxelRenderer.RenderWorld(environmentWorldGeneration.getGameObject(), world, environmentWorldGeneration.material); 
-            Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
+            // GameObject voxel = VoxelRenderer.renderVoxel(world, roundedX, roundedY, roundedZ);
+            // if (voxel != null) 
+            // {
+            //     voxel.transform.SetParent(environmentWorldGeneration.getGameObject().transform);
+            // }
+            // VoxelRenderer.RenderWorld(environmentWorldGeneration.getGameObject(), world, environmentWorldGeneration.material); 
+            // Debug.Log(world.BlockAt(roundedX, roundedY, roundedZ));
         }
     }
 
