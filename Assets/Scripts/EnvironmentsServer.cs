@@ -27,9 +27,12 @@ namespace Environment
         {
             try
             {
-                server = new TcpListener(IPAddress.Any, 8080);
+                server = new TcpListener(IPAddress.Parse("0.0.0.0"), 8080);
                 server.Start();
-                Debug.Log("Server started. Waiting for connections...");
+                
+                Debug.Log("Server is running on:");
+                Debug.Log("Address: " + server.LocalEndpoint);
+                Debug.Log("Port: " + ((IPEndPoint)server.LocalEndpoint).Port);
 
                 while (true)
                 {

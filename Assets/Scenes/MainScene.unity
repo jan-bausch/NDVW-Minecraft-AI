@@ -1011,7 +1011,7 @@ MonoBehaviour:
   goingRight: 0
   goingForward: 0
   goingBackward: 0
-  timePerMove: 0.033333335
+  timePerMove: 0.1
   orientation: {fileID: 880329804}
 --- !u!143 &1143910634
 CharacterController:
