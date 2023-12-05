@@ -4,13 +4,18 @@ using UnityEngine;
 
 public class CreeperMovement : MonoBehaviour
 {
-
+    [Header("Target")]
     public Transform target;
-    public float moveSpeed = 2.5f;
-    public float jumpForce = 5.0f;
     public float detectionRadius = 5.0f;
 
+    [Header("Movement")]
+    public float moveSpeed = 6.0f;
+    public float jumpForce = 10.0f;
+    public float airMultiplier = 0.5f;
+    public float gravity = 9.81f;
+
     private CharacterController controller;
+    private Vector3 moveDirection;
 
     void Start()
     {
@@ -19,28 +24,31 @@ public class CreeperMovement : MonoBehaviour
 
     void Update()
     {
-        Vector3 moveDirection = new Vector3();
-
-        moveDirection.y -= 9.81f * Time.deltaTime;
-
-        if (controller.isGrounded)
-        {
-            if (Input.GetButton("Jump"))
-            {
-                moveDirection.y = jumpForce * Time.deltaTime;
-            }
-        }
-
         // Check if player is close
-        if (target && ((target.transform.position - transform.position).magnitude < detectionRadius))
+        if (target && ((target.position - transform.position).magnitude < detectionRadius))
         {
             // Target player
             transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
 
             // Move forward
-            moveDirection += transform.forward * Time.deltaTime * moveSpeed;
+            Vector3 tempVector = transform.forward * moveSpeed;
+            moveDirection.x = tempVector.x;
+            moveDirection.z = tempVector.z;
+        } else {
+            moveDirection.x = 0;
+            moveDirection.z = 0;
         }
 
-        controller.Move(moveDirection);
+        // Check if creeper is grounded
+        if (controller.isGrounded) {
+            if (Random.Range(0.0f, 1.0f) < 0.1f) {
+                moveDirection.y = jumpForce;
+            }
+            moveDirection.y -= gravity * Time.deltaTime;
+            controller.Move(moveDirection * Time.deltaTime);
+        } else {
+            moveDirection.y -= gravity * Time.deltaTime;
+            controller.Move(moveDirection * Time.deltaTime * airMultiplier);
+        }
     }
 }
