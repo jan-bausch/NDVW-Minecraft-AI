@@ -104,9 +104,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 0}
-  moveSpeed: 2.5
-  jumpForce: 5
-  detectionRadius: 5
+  detectionRadius: 8
+  moveSpeed: 7
+  jumpForce: 8
+  airMultiplier: 0.5
+  gravity: 9.81
 --- !u!114 &4085477190174707329
 MonoBehaviour:
   m_ObjectHideFlags: 0
