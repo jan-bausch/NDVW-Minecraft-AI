@@ -3,19 +3,30 @@ using WorldGenerators;
 using WorldEditing;
 using Voxels;
 
-public class EnvironmentWorldGeneration : MonoBehaviour
-{
-    public Material material;
-    public VoxelWorld baseWorld;
-    private EditableWorld world;
-
-    void Generate(int seed)
+namespace Environment {
+    public class EnvironmentWorldGeneration : MonoBehaviour
     {
-        world = new EditableWorld(baseWorld);
-        Debug.Log(gameObject);
-        Debug.Log(world);
-        Debug.Log(material);
-        world.OverrideSeed(seed);
-        VoxelRenderer.RenderWorld(gameObject, world, material);
+        public Material material;
+        public VoxelWorld baseWorld;
+        public EditableWorld world;
+
+        void Generate(int seed)
+        {
+            world = new EditableWorld(baseWorld);
+            Debug.Log(gameObject);
+            Debug.Log(world);
+            Debug.Log(material);
+            world.OverrideSeed(seed);
+            VoxelRenderer.RenderWorld(gameObject, world, material);
+        }
+
+        public void UpdateEnvironment(){
+            VoxelRenderer.UpdateWorld(gameObject, world, material);
+        }
+
+        public GameObject getGameObject(){
+            return gameObject;
+        }
+
     }
 }
