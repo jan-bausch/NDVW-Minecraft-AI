@@ -300,9 +300,9 @@ CapsuleCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 2
   m_Radius: 0.5
   m_Height: 2
@@ -914,14 +914,6 @@ PrefabInstance:
     - target: {fileID: 460241468112107466, guid: 78ac99172ca1e4c6e988b44f1c99d0ae, type: 3}
       propertyPath: m_Name
       value: Creeper
-      objectReference: {fileID: 0}
-    - target: {fileID: 1974029407835349748, guid: 78ac99172ca1e4c6e988b44f1c99d0ae, type: 3}
-      propertyPath: m_Size.y
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1974029407835349748, guid: 78ac99172ca1e4c6e988b44f1c99d0ae, type: 3}
-      propertyPath: m_Enabled
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3163216564879949264, guid: 78ac99172ca1e4c6e988b44f1c99d0ae, type: 3}
       propertyPath: m_LocalPosition.x
