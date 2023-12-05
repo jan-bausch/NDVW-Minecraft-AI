@@ -12,12 +12,11 @@ public class CreeperExplode : MonoBehaviour
         audioSource = GetComponent<AudioSource>();
     }
 
-    void OnTriggerEnter(Collider other)
+    void OnTriggerStay(Collider other)
     {
+        Debug.Log(other.gameObject);
         if (other.gameObject.name == "Player")
         {
-            Debug.Log("Player-Creeper collision");
-
             // Animate explosion
             ParticleSystem exp = GetComponent<ParticleSystem>();
             exp.Play();
