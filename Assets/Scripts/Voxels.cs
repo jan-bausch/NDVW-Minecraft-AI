@@ -2,6 +2,7 @@ using UnityEngine;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Voxels
 {
@@ -49,9 +50,9 @@ namespace Voxels
             for (int x = 0; x < world.xMax; x++){
                 for (int y = 0; y < world.yMax; y++){
                     for (int z = 0; z < world.zMax; z++){
-                        int vertexCount = vertices.Count;
+                        //int vertexCount = vertices.Count;
                         //Debug.Log(vertexCount);
-                        //int voxelId = x * world.yMax * world.zMax + y * world.zMax + z;
+                        int voxelId = x * world.yMax * world.zMax + y * world.zMax + z;
                         var (voxelVertices, voxelRenderedFaces, voxelUvs, voxelNormals) = renderVoxel(world,x,y,z);
                         //Debug.Log(voxelVertices.Length);
                         
@@ -62,7 +63,7 @@ namespace Voxels
                         for (int i = 0; i < voxelRenderedFaces.Length; i++)
                         {
                             //Debug.Log(vertexCount);
-                            renderedFaces.Add(voxelRenderedFaces[i] + vertexCount);
+                            renderedFaces.Add(voxelRenderedFaces[i] + voxelId * 24);
                         }
                         for (int i = 0; i < voxelUvs.Length; i++)
                         {
@@ -78,6 +79,7 @@ namespace Voxels
 
             Mesh mesh = new Mesh();
 
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             mesh.vertices = vertices.ToArray();
             mesh.triangles = renderedFaces.ToArray();
             mesh.normals = normals.ToArray();
@@ -105,7 +107,29 @@ namespace Voxels
             meshCollider.sharedMesh = mesh;
         }
 
-        public static (Vector3[], int[], Vector2[], Vector3[]) renderVoxel(VoxelWorld world, int x, int y, int z)
+        public static void UpdateVoxel(GameObject parent, VoxelWorld world, int x, int y, int z)
+        {
+            MeshFilter meshFilter = parent.GetComponent<MeshFilter>();
+            Mesh mesh = meshFilter.sharedMesh;
+            int voxelId = x * world.yMax * world.zMax + y * world.zMax + z;
+
+            var originalTriangles = mesh.triangles.ToList();
+            Func<int, bool> filter = vertexId => vertexId < voxelId*24 && vertexId >= (voxelId+1)*24;
+            var triangles = originalTriangles.Where(filter).ToList();
+
+            var (voxelVertices, voxelRenderedFaces, voxelUvs, voxelNormals) = renderVoxel(world,x,y,z);
+            
+            for (int i = 0; i < voxelRenderedFaces.Length; i++)
+            {
+                triangles.Add(voxelRenderedFaces[i] + voxelId * 24);
+            }
+
+            meshFilter.sharedMesh = mesh;
+            MeshCollider meshCollider = parent.GetComponent<MeshCollider>();
+            meshCollider.sharedMesh = mesh;
+        }
+
+        private static (Vector3[], int[], Vector2[], Vector3[]) renderVoxel(VoxelWorld world, int x, int y, int z)
         {
             int blockType = world.BlockAt(x,y,z);
 
@@ -165,16 +189,6 @@ namespace Voxels
                 new Vector2(0, 0.5f), // 23
             };
 
-            if (blockType == VoxelWorld.AIR)
-            {
-                List<Vector3> nullNormals = new List<Vector3>();
-                for (int i = 0; i < vertices.Length; i++)
-                {
-                    nullNormals.Add(new Vector3(0, 0, 0));
-                }
-                return (vertices, new int[]{}, uvs, nullNormals.ToArray());
-            }
-
             // Define triangles for the cube's six faces
             int[] triangles = new int[]
             {
@@ -203,7 +217,7 @@ namespace Voxels
                 4, 7, 6 
             };
 
-            Vector3[] normals = new Vector3[]
+            Vector3[] normalsPerFace = new Vector3[]
             {
                 // Front
                 new Vector3(0, 0, -1),  
@@ -219,11 +233,30 @@ namespace Voxels
                 new Vector3(1, 0, 0) 
             };
 
+            List<Vector3> normalsList = new List<Vector3>();
             for (int i = 0; i < vertices.Length; i++)
             {
                 vertices[i] = vertices[i] + new Vector3(x, y, z); 
                 uvs[i].y = ((uvs[i].y * 64.0f) + ((float) (blockType % 4) * 80.0f)) / 304.0f;
                 uvs[i].x = ((uvs[i].x * 128.0f) + ((float) (blockType / 4) * 144.0f)) / 272.0f;
+                normalsList.Add(new Vector3(0, 0, 0));
+            }
+
+            for (int i = 0; i < triangles.Length; i += 6)
+            {
+                for (int j = 0; j < 6; j++)
+                { 
+                    int vertexId = triangles[i+j];
+                    Vector3 faceNormal = normalsPerFace[(i/6)];
+                    normalsList[vertexId] = faceNormal;
+                }
+            }
+
+            Vector3[] normals = normalsList.ToArray();
+
+            if (blockType == VoxelWorld.AIR)
+            {
+                return (vertices, new int[]{}, uvs, normals);
             }
 
             bool removeFrontFace = world.BlockAt(x - 0, y - 0, z - 1) != VoxelWorld.AIR;
@@ -255,16 +288,13 @@ namespace Voxels
                     {   
                         int vertexId = triangles[i+j];
                         filteredTriangles.Add(vertexId);
-                        Vector3 faceTriNormal = normals[(i/6)];
-                        filteredVerticesNormals[vertexId] = faceTriNormal;
                     }   
                 }
             }
 
             int[] renderedFaces = filteredTriangles.ToArray();
-            Vector3[] perVerticesNormals = filteredVerticesNormals.ToArray();
 
-            return (vertices, renderedFaces, uvs, perVerticesNormals);
+            return (vertices, renderedFaces, uvs, normals);
 
             // if (renderedFaces.Length == 0) return null;
             // // Create a new mesh
