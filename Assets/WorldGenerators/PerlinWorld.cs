@@ -23,6 +23,7 @@ public class PerlinWorld : VoxelWorld
         if (y < 10 + perlinValue * 10 * normalizedY)
         {
             float preciousProbability = Mathf.Lerp(0.001f, 0.02f, normalizedY);
+            Random.InitState(seed + x * 10000 + y * 100 + z);
 
             if (Random.value < preciousProbability)
             {

@@ -2,35 +2,38 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class CreeperExplode : MonoBehaviour
+namespace Creeper 
 {
-
-    private AudioSource audioSource;
-
-    void Start()
+    public class CreeperExplode : MonoBehaviour
     {
-        audioSource = GetComponent<AudioSource>();
-    }
 
-    void OnTriggerStay(Collider other)
-    {
-        Debug.Log(other.gameObject);
-        if (other.gameObject.name == "Player")
+        private AudioSource audioSource;
+
+        void Start()
         {
-            // Animate explosion
-            ParticleSystem exp = GetComponent<ParticleSystem>();
-            exp.Play();
-            audioSource.Play();
-
-            // Destory Creeper after audio clip ended
-            Invoke("OnCreeperExploded", audioSource.clip.length);
-            // Destroy player
-            Destroy(other.gameObject);
+            audioSource = GetComponent<AudioSource>();
         }
-    }
 
-    void OnCreeperExploded()
-    {
-        Destroy(gameObject);
+        void OnTriggerStay(Collider other)
+        {
+            //Debug.Log(other.gameObject);
+            if (other.gameObject.name == "Player")
+            {
+                // Animate explosion
+                ParticleSystem exp = GetComponent<ParticleSystem>();
+                exp.Play();
+                audioSource.Play();
+
+                // Destory Creeper after audio clip ended
+                Invoke("OnCreeperExploded", audioSource.clip.length);
+                // Destroy player
+                Destroy(other.gameObject);
+            }
+        }
+
+        void OnCreeperExploded()
+        {
+            Destroy(gameObject);
+        }
     }
 }

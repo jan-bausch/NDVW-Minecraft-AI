@@ -20,7 +20,9 @@ public class FlatWorld : VoxelWorld
         {
             return VoxelWorld.AIR;
         }
-        if (x % 10 == 0 && y == threshold && z % 10 == 0)
+        Random.InitState(seed + x * 10000 + y * 100 + z);
+        
+        if (Random.value < 0.3 && y <= threshold+4)
         {
             return VoxelWorld.SOLID_PRECIOUS;
         }
