@@ -11,6 +11,7 @@ namespace Creeper
         public float detectionRadius = 8.0f;
 
         [Header("Movement")]
+        public bool remoteControlled;
         public float moveSpeed = 7.0f;
         public float jumpForce = 8.0f;
         public float airMultiplier = 0.5f;
@@ -26,7 +27,14 @@ namespace Creeper
 
         void Update()
         {
-            // Check if player is close
+            if (!remoteControlled)
+            {
+                MoveUpdate(Time.deltaTime);
+            }
+        }
+
+        public void MoveUpdate(float delta)
+        {
             if (target && ((target.position - transform.position).magnitude < detectionRadius))
             {
                 // Target player
@@ -49,11 +57,11 @@ namespace Creeper
                     //Debug.Log("Jump");
                     moveDirection.y = jumpForce;
                 }
-                moveDirection.y -= gravity * Time.deltaTime;
-                controller.Move(moveDirection * Time.deltaTime);
+                moveDirection.y -= gravity * delta;
+                controller.Move(moveDirection * delta);
             } else {
-                moveDirection.y -= gravity * Time.deltaTime;
-                controller.Move(moveDirection * Time.deltaTime * airMultiplier);
+                moveDirection.y -= gravity * delta;
+                controller.Move(moveDirection * delta * airMultiplier);
             }
         }
     }

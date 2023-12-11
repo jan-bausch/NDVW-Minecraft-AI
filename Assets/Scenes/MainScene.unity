@@ -183,7 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa1edbe2eae55a646aa71a90697e63a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSize: 1
+  gridSize: 3
   seed: 0
   spacing: 42
   remoteControlled: 0
@@ -390,7 +390,12 @@ MonoBehaviour:
   jumpForce: 5
   airMultiplier: 1
   gravity: 12
-  jumpKey: 32
+  remoteControlled: 0
+  jumping: 0
+  goingLeft: 0
+  goingRight: 0
+  goingForward: 0
+  goingBackward: 0
   orientation: {fileID: 81073077}
 --- !u!114 &509222107
 MonoBehaviour:
@@ -405,6 +410,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 559960030}
+  remoteControlled: 0
+  placingBlock: 0
+  breakingBlock: 0
   rayTime: 10
   range: 5
   checkIncrement: 0.1
@@ -608,6 +616,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   sensX: 400
   sensY: 400
+  remoteControlled: 0
+  lookingLeft: 0
+  lookingRight: 0
+  lookingUp: 0
+  lookingDown: 0
   orientation: {fileID: 81073077}
 --- !u!114 &559960032
 MonoBehaviour:
@@ -710,6 +723,7 @@ GameObject:
   m_Component:
   - component: {fileID: 689682568}
   - component: {fileID: 689682569}
+  - component: {fileID: 689682570}
   m_Layer: 0
   m_Name: Environment
   m_TagString: Untagged
@@ -750,6 +764,29 @@ MonoBehaviour:
   material: {fileID: 2100000, guid: 4bf30e54f75abc84180c217ef7b72064, type: 2}
   baseWorld: {fileID: 11400000, guid: f85cd9f6b4963c74da5b7091c374ca28, type: 2}
   world: {fileID: 0}
+--- !u!114 &689682570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 689682567}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f72745db4b1e6f47a37fc22edbc4ac5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  jumping: 0
+  goingLeft: 0
+  goingRight: 0
+  goingForward: 0
+  goingBackward: 0
+  placingBlock: 0
+  breakingBlock: 0
+  lookingLeft: 0
+  lookingRight: 0
+  lookingUp: 0
+  lookingDown: 0
 --- !u!1 &704212823
 GameObject:
   m_ObjectHideFlags: 0
@@ -6344,6 +6381,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 509222104}
   detectionRadius: 8
+  remoteControlled: 0
   moveSpeed: 7
   jumpForce: 8
   airMultiplier: 0.5

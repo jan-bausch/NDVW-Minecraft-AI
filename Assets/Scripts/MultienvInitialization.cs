@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
-using Player;
+using Environment;
 using UnityEngine;
 
 namespace Multienv
@@ -19,6 +19,11 @@ namespace Multienv
             if (!remoteControlled)
             {
                 Generate(gridSize*gridSize, 0);
+            }
+            else
+            {
+                MultienvConductor cond = gameObject.AddComponent<MultienvConductor>();
+                MultienvServer server = gameObject.AddComponent<MultienvServer>();
             }
         }
 
@@ -50,7 +55,7 @@ namespace Multienv
 
                     environmentClone.transform.parent = environmentParent.transform;
 
-                    if ((x != 0 || z != 0) && !remoteControlled)
+                    if ((x != 2 || z != 2) && !remoteControlled)
                     {
                         Transform playerTransform = environmentClone.transform.Find("Player");
                         playerTransform.gameObject.SetActive(false);
@@ -58,11 +63,25 @@ namespace Multienv
                         camTransform.gameObject.SetActive(false);
                     }
 
+
                     environmentClone.SetActive(true);
                     environmentClone.name = "Environment_" + x + "_" + z; 
 
                     int worldSeed = seed*(1000*1000)+x*(1000)+z;
                     environmentClone.SendMessage("Generate", worldSeed, SendMessageOptions.RequireReceiver);
+                    
+                    if (remoteControlled)
+                    {
+                        if (x != 0 || z != 0)
+                        {
+                            Transform camTransform = environmentClone.transform.Find("CameraHolder").Find("Camera");
+                            AudioListener al = camTransform.gameObject.GetComponent<AudioListener>();
+                            Destroy(al);
+                        }
+
+                        EnvironmentIO envio = environmentClone.GetComponent<EnvironmentIO>();
+                        envio.EnableRemoteControlled();
+                    }
                 }
             }
 

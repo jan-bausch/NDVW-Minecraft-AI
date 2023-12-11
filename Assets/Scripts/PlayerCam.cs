@@ -10,6 +10,13 @@ namespace Player
         float xRotation;
         float yRotation;
 
+        public bool remoteControlled = false;
+
+        public bool lookingLeft = false;
+        public bool lookingRight = false;
+        public bool lookingUp = false;
+        public bool lookingDown = false;
+
         public Transform orientation;
 
         void Start()
@@ -21,8 +28,28 @@ namespace Player
 
         void Update()
         {
-            float mouseX = Input.GetAxisRaw("Mouse X") * Time.deltaTime * sensX;
-            float mouseY = Input.GetAxisRaw("Mouse Y") * Time.deltaTime * sensY;
+            if (!remoteControlled)
+            {
+                moveUpdate(Time.deltaTime, Input.GetAxisRaw("Mouse X"), Input.GetAxisRaw("Mouse Y"));
+            }
+        }
+
+        public void MoveUpdate(float delta)
+        {
+            float axisX = 0.0f;
+            float axisY = 0.0f;
+            if (lookingLeft) axisX = -1.0f;
+            if (lookingRight) axisX = 1.0f;
+            if (lookingDown) axisY = -1.0f;
+            if (lookingUp) axisY = 1.0f;
+
+            moveUpdate(delta, axisX, axisY);
+        }
+
+        private void moveUpdate(float delta, float axisX, float axisY)
+        {
+            float mouseX = Input.GetAxisRaw("Mouse X") * delta * sensX;
+            float mouseY = Input.GetAxisRaw("Mouse Y") * delta * sensY;
 
             yRotation += mouseX;
             xRotation -= mouseY;

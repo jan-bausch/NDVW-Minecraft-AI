@@ -50,7 +50,8 @@ namespace Environment {
 
         public void OnBlockUpdate(int x, int y, int z, int oldBlock, int newBlock)
         {
-            //Debug.Log("WORLD UPDATE");
+            Debug.Log("hey");
+            Debug.Log(this);
             VoxelRenderer.RenderWorld(gameObject, world, material);
         }
     }

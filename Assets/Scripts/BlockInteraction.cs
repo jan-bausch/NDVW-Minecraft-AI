@@ -14,6 +14,9 @@ namespace Player
         public Camera playerCamera;
 
         [Header("Block Placement")]
+        public bool remoteControlled = false;
+        public bool placingBlock = false;
+        public bool breakingBlock = false;
         public float rayTime = 1.0f;
         public float range = 5.0f;
         public float checkIncrement = 0.1f;
@@ -23,10 +26,25 @@ namespace Player
 
         void Update()
         {
-            if (Input.GetMouseButtonDown(0)){
-                removeBlock();
-            } else if (Input.GetMouseButtonDown(1)){
+            if (!remoteControlled)
+            {
+                if (Input.GetMouseButtonDown(0)){
+                    removeBlock();
+                } else if (Input.GetMouseButtonDown(1)){
+                    placeBlock();
+                }
+            }
+        }
+
+        public void MoveUpdate(float delta)
+        {
+            if (placingBlock)
+            {
                 placeBlock();
+            }
+            if (breakingBlock)
+            {
+                removeBlock();
             }
         }
 
@@ -45,7 +63,8 @@ namespace Player
                 int roundedZ = Mathf.FloorToInt(lastPos.z);
 
                 // only one world
-                EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
+                EnvironmentWorldGeneration environmentWorldGeneration = transform.parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
+                Debug.Log(environmentWorldGeneration);
                 EditableWorld world = environmentWorldGeneration.world;
 
                 int blockType = VoxelWorld.AIR;
@@ -69,9 +88,9 @@ namespace Player
                 int roundedY = Mathf.FloorToInt(pos.y);
                 int roundedZ = Mathf.FloorToInt(pos.z);
                 
-                // only one world
-                Transform parent = transform.parent;
-                EnvironmentWorldGeneration environmentWorldGeneration = parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
+                EnvironmentWorldGeneration environmentWorldGeneration = transform.parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
+                Debug.Log("remove:");
+                Debug.Log(environmentWorldGeneration);
                 EditableWorld world = environmentWorldGeneration.world;
 
                 int blockType = world.BlockAt(roundedX, roundedY, roundedZ);
@@ -89,11 +108,15 @@ namespace Player
         private (Vector3, Vector3)? executeRay(){
             float step = checkIncrement;
             Vector3 lastPos = new Vector3();
-            EnvironmentWorldGeneration environmentWorldGeneration = FindObjectOfType<EnvironmentWorldGeneration>();
+            EnvironmentWorldGeneration environmentWorldGeneration = transform.parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
+            Debug.Log("ray:");
+            Debug.Log(environmentWorldGeneration);
             EditableWorld world = environmentWorldGeneration.world;
 
             while (step < range) {
                 Vector3 pos = playerCamera.transform.position + (playerCamera.transform.forward * step);
+                Debug.Log(pos);
+                pos -= environmentWorldGeneration.transform.position;
                 if (world.BlockAt(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z)) != -1) {
                     Debug.DrawRay(playerCamera.transform.position, playerCamera.transform.forward * step * 100f, Color.red, rayTime);
                     return (pos, lastPos);

@@ -42,12 +42,14 @@ namespace WorldEditing
 
         public void SetBlock(int x, int y, int z, int block)
         {
+            Debug.Log("heyko");
             int oldBlock = BlockAt(x, y, z);
             Vector3 key = new Vector3(x, y, z);
             editedBlocks[key] = block;
 
             foreach(var listener in listeners)
             {
+                Debug.Log(listener);
                 listener.OnBlockUpdate(x, y, z, oldBlock, block);
             }
         }
