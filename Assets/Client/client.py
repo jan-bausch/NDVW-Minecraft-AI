@@ -15,7 +15,7 @@ import sqlite3
 SERVER_PORT = 8080
 
 SEED = 3
-PARALLEL_EPISODES = 9
+PARALLEL_EPISODES = 1089
 TRAIN_VALID_SPLIT = 0.8
 TRAIN_EPISODES = int(PARALLEL_EPISODES * TRAIN_VALID_SPLIT)
 VALID_EPISODES = PARALLEL_EPISODES - TRAIN_EPISODES
@@ -168,7 +168,7 @@ optimizer = torch.optim.Adam(model.parameters())
 
 BASE_EPSILON = 1
 MIN_EPSILON = 0.1
-BATCH_SIZE = 128
+BATCH_SIZE = 1024
 EXPLORATORY_FRAMES = 1_000_000
 MEMORY_REPLAY_SIZE = 1_000_000
 MAX_TARGET_INDEPENDENCE_FRAMES = 128
@@ -384,26 +384,26 @@ def receive_frame_data(conn):
                 f"<if{len(data)//4 - 2}i", data
             )
             
-            if steps_counter % 10 == 0:
-                pixels = game_state[2:]
-                #inventory = game_state[:2]
+            # if steps_counter % 10 == 0:
+            #     pixels = game_state[2:]
+            #     #inventory = game_state[:2]
                 
-                # Determine the dimensions of the image based on the number of pixels and 3 channels (RGB)
-                side_length = int(math.sqrt(len(pixels) // FRAME_CHANNELS))  # Dividing by 3 for RGB channels
+            #     # Determine the dimensions of the image based on the number of pixels and 3 channels (RGB)
+            #     side_length = int(math.sqrt(len(pixels) // FRAME_CHANNELS))  # Dividing by 3 for RGB channels
 
-                # Split the pixels into separate RGB channels
-                pixels_r = pixels[:len(pixels) // FRAME_CHANNELS]
-                pixels_g = pixels[len(pixels) // FRAME_CHANNELS:2 * len(pixels) // FRAME_CHANNELS]
-                pixels_b = pixels[2 * len(pixels) // FRAME_CHANNELS:]
+            #     # Split the pixels into separate RGB channels
+            #     pixels_r = pixels[:len(pixels) // FRAME_CHANNELS]
+            #     pixels_g = pixels[len(pixels) // FRAME_CHANNELS:2 * len(pixels) // FRAME_CHANNELS]
+            #     pixels_b = pixels[2 * len(pixels) // FRAME_CHANNELS:]
 
-                image = Image.new('RGB', (side_length, side_length))
+            #     image = Image.new('RGB', (side_length, side_length))
 
-                combined_pixels = list(zip(pixels_r, pixels_g, pixels_b))
+            #     combined_pixels = list(zip(pixels_r, pixels_g, pixels_b))
 
-                image.putdata(combined_pixels)
+            #     image.putdata(combined_pixels)
 
-                png_path = f'/home/anicet/tmp/py/frame_step_{steps_counter}_world_{world_id}.png'
-                image.save(png_path)
+            #     png_path = f'~/tmp/py/frame_step_{steps_counter}_world_{world_id}.png'
+            #     image.save(png_path)
 
 
             if (
