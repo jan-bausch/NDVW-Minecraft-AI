@@ -43,6 +43,7 @@ namespace Multienv
             }
 
             GameObject originalEnvironment = transform.Find("Environment").gameObject;
+            EnvironmentWorldGeneration envworld = originalEnvironment.GetComponent<EnvironmentWorldGeneration>();
 
             Debug.Log(worldsCount + ", " + seed);
 
@@ -50,12 +51,13 @@ namespace Multienv
             {
                 for (int z = 0; z < gridSize; z++)
                 {
-                    Vector3 position = new Vector3(x * 20 + x * spacing, 0f, z * 20 + z * spacing);
+                    
+                    Vector3 position = new Vector3(x * envworld.worldSizeX + x * spacing, 0f, z * envworld.worldSizeZ + z * spacing);
                     GameObject environmentClone = Instantiate(originalEnvironment, position, Quaternion.identity);
 
                     environmentClone.transform.parent = environmentParent.transform;
 
-                    if ((x != 2 || z != 2) && !remoteControlled)
+                    if ((x != 0 || z != 0) && !remoteControlled)
                     {
                         Transform playerTransform = environmentClone.transform.Find("Player");
                         playerTransform.gameObject.SetActive(false);

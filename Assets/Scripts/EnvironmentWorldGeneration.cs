@@ -5,16 +5,33 @@ using Voxels;
 namespace Environment {
     public class EnvironmentWorldGeneration : MonoBehaviour, EditableWorldListener
     {
+        public enum WorldTypes
+        {
+            Flat,
+            Perlin
+        }
+
         public Material material;
-        public VoxelWorld baseWorld;
+
+        public WorldTypes worldType = WorldTypes.Flat;
+        public int worldSizeX = 20;
+        public int worldSizeY = 20;
+        public int worldSizeZ = 20;
+
         public EditableWorld world;
 
         void Generate(int seed)
         {
+            VoxelWorld baseWorld = null;
+            if (worldType == WorldTypes.Flat)
+            {
+                baseWorld = new FlatWorld(worldSizeX, worldSizeY, worldSizeZ);
+            } else if (worldType == WorldTypes.Perlin)
+            {
+                baseWorld = new PerlinWorld(worldSizeX, worldSizeY, worldSizeZ);
+            }
+
             world = new EditableWorld(baseWorld);
-            //Debug.Log(gameObject);
-            //Debug.Log(world);
-            //Debug.Log(material);
             world.OverrideSeed(seed);
             world.Subscribe(this);
             VoxelRenderer.RenderWorld(gameObject, world, material);
@@ -23,7 +40,7 @@ namespace Environment {
             playerTransform.position = transform.position + randomSpawnPos(seed, 1, 10, 1, 10);
 
             Transform creeperTransform = transform.Find("Creeper");
-            Vector3 creeperPos = transform.position + randomSpawnPos(seed, 11, 19, 11, 19);
+            Vector3 creeperPos = transform.position + randomSpawnPos(seed, worldSizeX-10, worldSizeX-1, worldSizeZ-10, worldSizeZ-1);
             creeperTransform.position = creeperPos;
             Physics.SyncTransforms();
         }
@@ -37,7 +54,7 @@ namespace Environment {
             int spawnY = 0;
             int prevprev = VoxelWorld.AIR;
             int prev = VoxelWorld.AIR;
-            for (; spawnY < 21; spawnY++)
+            for (; spawnY < worldSizeY+1; spawnY++)
             {
                 int block = world.BlockAt(spawnX, spawnY, spawnZ);
                 if (block == VoxelWorld.AIR && prev == VoxelWorld.AIR && prevprev != VoxelWorld.AIR) break;
@@ -50,8 +67,8 @@ namespace Environment {
 
         public void OnBlockUpdate(int x, int y, int z, int oldBlock, int newBlock)
         {
-            Debug.Log("hey");
-            Debug.Log(this);
+            //Debug.Log("hey");
+            //Debug.Log(this);
             VoxelRenderer.RenderWorld(gameObject, world, material);
         }
     }

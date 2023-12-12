@@ -183,7 +183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fa1edbe2eae55a646aa71a90697e63a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gridSize: 3
+  gridSize: 1
   seed: 0
   spacing: 42
   remoteControlled: 0
@@ -409,7 +409,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2a75c2bb94fbda4295476b7bff3c79c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerCamera: {fileID: 559960030}
   remoteControlled: 0
   placingBlock: 0
   breakingBlock: 0
@@ -762,7 +761,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   material: {fileID: 2100000, guid: 4bf30e54f75abc84180c217ef7b72064, type: 2}
-  baseWorld: {fileID: 11400000, guid: f85cd9f6b4963c74da5b7091c374ca28, type: 2}
+  worldType: 1
+  worldSizeX: 20
+  worldSizeY: 40
+  worldSizeZ: 20
   world: {fileID: 0}
 --- !u!114 &689682570
 MonoBehaviour:

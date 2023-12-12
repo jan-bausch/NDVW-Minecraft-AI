@@ -11,6 +11,8 @@ namespace WorldEditing
         private Dictionary<Vector3, int> editedBlocks;
         private VoxelWorld world;
 
+        private int _seed;
+
         private List<EditableWorldListener> listeners;
 
         public EditableWorld(VoxelWorld world) : base(
@@ -26,6 +28,7 @@ namespace WorldEditing
 
         public override void OverrideSeed(int seed)
         {
+            this._seed = seed;
             world.OverrideSeed(seed);
         }
 
@@ -42,7 +45,7 @@ namespace WorldEditing
 
         public void SetBlock(int x, int y, int z, int block)
         {
-            Debug.Log("heyko");
+            Debug.Log("[World "+_seed+"]: Block set ("+ x + "," + y + "," + z +") " + block);
             int oldBlock = BlockAt(x, y, z);
             Vector3 key = new Vector3(x, y, z);
             editedBlocks[key] = block;
@@ -56,7 +59,13 @@ namespace WorldEditing
 
         public void Subscribe(EditableWorldListener listener)
         {
+            Debug.Log("[World "+_seed+"]: Listener added ("+ (listeners.Count+1) +")");
             listeners.Add(listener);
+        }
+
+        public int GetSeed()
+        {
+            return _seed;
         }
     }
 

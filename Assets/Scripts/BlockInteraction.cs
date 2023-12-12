@@ -10,8 +10,6 @@ namespace Player
 {
     public class BlockInteraction : MonoBehaviour
     {
-        [Header("Camera")]
-        public Camera playerCamera;
 
         [Header("Block Placement")]
         public bool remoteControlled = false;
@@ -62,9 +60,8 @@ namespace Player
                 int roundedY = Mathf.FloorToInt(lastPos.y);
                 int roundedZ = Mathf.FloorToInt(lastPos.z);
 
-                // only one world
                 EnvironmentWorldGeneration environmentWorldGeneration = transform.parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
-                Debug.Log(environmentWorldGeneration);
+                //Debug.Log(environmentWorldGeneration);
                 EditableWorld world = environmentWorldGeneration.world;
 
                 int blockType = VoxelWorld.AIR;
@@ -89,8 +86,8 @@ namespace Player
                 int roundedZ = Mathf.FloorToInt(pos.z);
                 
                 EnvironmentWorldGeneration environmentWorldGeneration = transform.parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
-                Debug.Log("remove:");
-                Debug.Log(environmentWorldGeneration);
+                //Debug.Log("remove:");
+                //Debug.Log(environmentWorldGeneration);
                 EditableWorld world = environmentWorldGeneration.world;
 
                 int blockType = world.BlockAt(roundedX, roundedY, roundedZ);
@@ -100,7 +97,7 @@ namespace Player
                 } else {
                     invSolid += 1;
                 }
-                Debug.Log("precious: "+invPrecious + " ; solid: " + invSolid);
+                //Debug.Log("precious: "+invPrecious + " ; solid: " + invSolid);
                 world.SetBlock(roundedX, roundedY, roundedZ, VoxelWorld.AIR);
             }
         }
@@ -108,17 +105,19 @@ namespace Player
         private (Vector3, Vector3)? executeRay(){
             float step = checkIncrement;
             Vector3 lastPos = new Vector3();
+            
+            Transform cameraTransform = transform.parent.Find("CameraHolder").Find("Camera");
+
             EnvironmentWorldGeneration environmentWorldGeneration = transform.parent.gameObject.GetComponent<EnvironmentWorldGeneration>();
-            Debug.Log("ray:");
-            Debug.Log(environmentWorldGeneration);
+            //Debug.Log(environmentWorldGeneration);
             EditableWorld world = environmentWorldGeneration.world;
 
             while (step < range) {
-                Vector3 pos = playerCamera.transform.position + (playerCamera.transform.forward * step);
-                Debug.Log(pos);
+                Vector3 pos = cameraTransform.position + (cameraTransform.forward * step);
+                //Debug.Log(pos);
                 pos -= environmentWorldGeneration.transform.position;
                 if (world.BlockAt(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z)) != -1) {
-                    Debug.DrawRay(playerCamera.transform.position, playerCamera.transform.forward * step * 100f, Color.red, rayTime);
+                    Debug.DrawRay(cameraTransform.position, cameraTransform.forward * step * 100f, Color.red, rayTime);
                     return (pos, lastPos);
                 }
                 lastPos = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
