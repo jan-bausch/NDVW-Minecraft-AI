@@ -20,6 +20,8 @@ public class PlayerMovement : MonoBehaviour
     public bool goingBackward = false;
     private float horizontalInput = 0.0f;
     private float verticalInput = 0.0f;
+
+    public bool dead = false;
     
     [Header("Orientation")]
     public Transform orientation;
@@ -41,7 +43,7 @@ public class PlayerMovement : MonoBehaviour
     }
 
     public void MoveUpdate(float delta){
-        if (remoteControlled)
+        if (remoteControlled && !dead)
         {
             verticalInput = 0.0f;
             horizontalInput = 0.0f;

@@ -48,8 +48,8 @@ namespace Player
 
         private void moveUpdate(float delta, float axisX, float axisY)
         {
-            float mouseX = Input.GetAxisRaw("Mouse X") * delta * sensX;
-            float mouseY = Input.GetAxisRaw("Mouse Y") * delta * sensY;
+            float mouseX = axisX * delta * sensX;
+            float mouseY = axisY * delta * sensY;
 
             yRotation += mouseX;
             xRotation -= mouseY;

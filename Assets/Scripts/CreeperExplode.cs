@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Player;
 
 namespace Creeper 
 {
@@ -8,6 +9,8 @@ namespace Creeper
     {
 
         private AudioSource audioSource;
+
+        public bool remoteControlled;
 
         void Start()
         {
@@ -17,7 +20,7 @@ namespace Creeper
         void OnTriggerStay(Collider other)
         {
             //Debug.Log(other.gameObject);
-            if (other.gameObject.name == "Player")
+            if (!remoteControlled && other.gameObject.name == "Player")
             {
                 // Animate explosion
                 ParticleSystem exp = GetComponent<ParticleSystem>();
@@ -28,6 +31,11 @@ namespace Creeper
                 Invoke("OnCreeperExploded", audioSource.clip.length);
                 // Destroy player
                 Destroy(other.gameObject);
+            }
+            if (remoteControlled && other.gameObject.name == "Player")
+            {
+                PlayerMovement pm = other.gameObject.GetComponent<PlayerMovement>();
+                pm.dead = true;
             }
         }
 

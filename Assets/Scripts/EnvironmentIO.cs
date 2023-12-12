@@ -73,11 +73,11 @@ namespace Environment
             }
             for (int i = pixels.Length; i < pixels.Length*2; i++)
             {
-                channelsflattened[i] = (int)(pixels[i].g * 255f);
+                channelsflattened[i] = (int)(pixels[i-pixels.Length].g * 255f);
             }
             for (int i = pixels.Length*2; i < pixels.Length*3; i++)
             {
-                channelsflattened[i] = (int)(pixels[i].b * 255f);
+                channelsflattened[i] = (int)(pixels[i-(pixels.Length*2)].b * 255f);
             }
 
             RenderTexture.active = null;
@@ -133,13 +133,16 @@ namespace Environment
             CreeperMovement cm = creeperTransform.gameObject.GetComponent<CreeperMovement>();
             cm.remoteControlled = true;
 
+            CreeperExplode ce = creeperTransform.gameObject.GetComponent<CreeperExplode>();
+            ce.remoteControlled = true;
+
             Transform camTransform = transform.Find("CameraHolder").Find("Camera");
            
             PlayerCam pc = camTransform.gameObject.GetComponent<PlayerCam>();
             pc.remoteControlled = true;
 
             Camera cameraComponent = camTransform.gameObject.GetComponent<Camera>();
-            renderTexture = new RenderTexture(128, 128, 24);
+            renderTexture = new RenderTexture(64, 64, 24);
             renderTexture.name = "EnvironmentRenderTexture";
             cameraComponent.targetTexture = renderTexture;
         }

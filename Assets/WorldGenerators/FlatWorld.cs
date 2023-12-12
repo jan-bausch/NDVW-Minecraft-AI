@@ -23,7 +23,7 @@ namespace Voxels
             
             Random.InitState(seed + x * 10000 + y * 100 + z);
             
-            if ((Random.value < 0.05 && y <= threshold) || (Random.value < 0.02 && y > threshold+4))
+            if ((Random.value < 0.2 && y <= threshold) || (Random.value < 0.02 && y > threshold+4))
             {
                 return VoxelWorld.SOLID_PRECIOUS;
             }

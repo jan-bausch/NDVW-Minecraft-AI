@@ -10,8 +10,6 @@ namespace Multienv
 {
     public class MultienvConductor : MonoBehaviour
     {
-        public int maxFramesAccumulation = 1;
-
         public bool allAtTheSameTime = false;
 
         private int frameCount = 0;
@@ -103,10 +101,12 @@ namespace Multienv
                 if (!allAtTheSameTime && frameCount % children.Length != id) continue;
                 
                 int action = -1;
-                if (environmentQueues[id].Count < maxFramesAccumulation)
+                if (playerActionQueues[id].TryDequeue(out action))
                 {
                     EnvironmentIO envio = env.gameObject.GetComponent<EnvironmentIO>();
                     int[] gameState = envio.GetGameState();
+
+                    Debug.Log("World: "+id+" Action: " + action);
 
                     if (action != -1)
                     {
@@ -116,6 +116,8 @@ namespace Multienv
                     }
 
                     float rewardSignal = envio.GetReward();
+
+                    Debug.Log("World: "+id+" Reward: " + rewardSignal);
 
                     EnvironmentData frameInfo = new EnvironmentData
                     {

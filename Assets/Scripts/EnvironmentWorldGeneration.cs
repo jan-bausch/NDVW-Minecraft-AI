@@ -37,10 +37,10 @@ namespace Environment {
             VoxelRenderer.RenderWorld(gameObject, world, material);
 
             Transform playerTransform = transform.Find("Player");
-            playerTransform.position = transform.position + randomSpawnPos(seed, 1, 10, 1, 10);
+            playerTransform.position = transform.position + randomSpawnPos(seed, 5, 10, 5, 10);
 
             Transform creeperTransform = transform.Find("Creeper");
-            Vector3 creeperPos = transform.position + randomSpawnPos(seed, worldSizeX-10, worldSizeX-1, worldSizeZ-10, worldSizeZ-1);
+            Vector3 creeperPos = transform.position + randomSpawnPos(seed, worldSizeX-5, worldSizeX-1, worldSizeZ-5, worldSizeZ-1);
             creeperTransform.position = creeperPos;
             Physics.SyncTransforms();
         }
