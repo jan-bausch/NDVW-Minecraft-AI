@@ -109,14 +109,18 @@ namespace Environment
             {
                 return -1.0f;
             }
-            float distance = (1.5f * Math.Max(Math.Min(Vector3.Distance(playerTransform.position, creeperTransform.position) / 20.0f, 1.0f), 0.0f)) -1.0f;
+            float distance = Vector3.Distance(playerTransform.position, creeperTransform.position);
+            if (distance < 0.5f)
+            {
+                return -1.0f;
+            }
+
+            float distanceSignal = (float) Math.Pow(Math.Exp((double) (distance - 1.0f)), 20.0);
             
             BlockInteraction bi = playerTransform.gameObject.GetComponent<BlockInteraction>();
             var (invSolid, invPrecious) = bi.GetInv();
-            float precious = Math.Max(Math.Min((float) invPrecious / 10.0f, 1.0f), 0.0f);
 
-            float reward = distance + 0.5f * precious;
-            return reward;
+            return invPrecious;
         }
 
         public void EnableRemoteControlled()

@@ -3,7 +3,6 @@ import struct
 import random
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import argparse
 import csv
 import time
@@ -13,7 +12,7 @@ import copy
 SERVER_PORT = 8080
 
 SEED = 3
-PARALLEL_EPISODES = 16
+PARALLEL_EPISODES = 36
 TRAIN_VALID_SPLIT = 0.8
 TRAIN_EPISODES = int(PARALLEL_EPISODES * TRAIN_VALID_SPLIT)
 VALID_EPISODES = PARALLEL_EPISODES - TRAIN_EPISODES
@@ -70,6 +69,7 @@ class DQN(nn.Module):
         return int(torch.prod(torch.tensor(x.size())))
 
     def forward(self, x: torch.Tensor):
+        self.lstm.flatten_parameters()
         x_other = x[:, :self.other_dim]
         x_frame = x[:, self.other_dim:]
         x = x_frame.view(
@@ -92,7 +92,6 @@ class DQN(nn.Module):
         lstm_out, self.lstm_hidden = self.lstm(x)
         x = lstm_out[:, -1, :]
         x = self.fc3(x)
-        x = F.softmax(x, dim=1)
         return x
 
 
@@ -212,6 +211,7 @@ def neural_model(worlds_states, worlds_rewards):
             target_independence_frames = 0
             target_model = DQN(FRAME_DIM, FRAME_CHANNELS, OTHER_DIM, OUTPUT_DIM)
             target_model.load_state_dict(model.state_dict())
+            target_model.to(device)
 
     actions_values = prediction_actions_values
     if actions_values is None:
