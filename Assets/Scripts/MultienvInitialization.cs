@@ -88,6 +88,8 @@ namespace Multienv
             }
 
             originalEnvironment.SetActive(false);
+            GC.Collect();
+            Resources.UnloadUnusedAssets();
         }
     }
 }
