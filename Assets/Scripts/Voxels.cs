@@ -113,15 +113,16 @@ namespace Voxels
             meshCollider.sharedMesh = mesh;
         }
 
-        public static void UpdateVoxel(GameObject parent, VoxelWorld world, int x, int y, int z)
+        private static void updateVoxel(GameObject parent, VoxelWorld world, int x, int y, int z)
         {
             MeshFilter meshFilter = parent.GetComponent<MeshFilter>();
             Mesh mesh = meshFilter.sharedMesh;
             int voxelId = x * world.yMax * world.zMax + y * world.zMax + z;
 
             var originalTriangles = mesh.triangles.ToList();
-            Func<int, bool> filter = vertexId => vertexId < voxelId*24 && vertexId >= (voxelId+1)*24;
+            Func<int, bool> filter = vertexId => vertexId < voxelId*24 || vertexId >= (voxelId+1)*24;
             var triangles = originalTriangles.Where(filter).ToList();
+            var uvs = mesh.uv.ToList();
 
             var (voxelVertices, voxelRenderedFaces, voxelUvs, voxelNormals) = renderVoxel(world,x,y,z);
             
@@ -130,9 +131,37 @@ namespace Voxels
                 triangles.Add(voxelRenderedFaces[i] + voxelId * 24);
             }
 
+            for (int i = 0; i < voxelVertices.Length; i++)
+            {
+                int vertexId = voxelId * 24 + i;
+                uvs[vertexId] = voxelUvs[i];
+            }
+
+            mesh.triangles = triangles.ToArray();
+            mesh.uv = uvs.ToArray();
+
             meshFilter.sharedMesh = mesh;
             MeshCollider meshCollider = parent.GetComponent<MeshCollider>();
             meshCollider.sharedMesh = mesh;
+        }
+
+        public static void UpdateVoxel(GameObject parent, VoxelWorld world, int x, int y, int z)
+        {
+            for (int sx = -1; sx <= 1; sx++)
+            {
+                for (int sy = -1; sy <= 1; sy++)
+                {
+                    for (int sz = -1; sz <= 1; sz++)
+                    {
+                        int nx = x + sx;
+                        int ny = y + sy;
+                        int nz = z + sz;
+                        if (nx < 0 || nx >= world.xMax || ny < 0 || ny >= world.yMax || nz < 0 || nz >= world.zMax) continue;
+                        //if (world.BlockAt(nx, ny, nz) == VoxelWorld.AIR) continue;
+                        updateVoxel(parent, world, nx, ny, nz);
+                    }
+                }
+            }
         }
 
         private static (Vector3[], int[], Vector2[], Vector3[]) renderVoxel(VoxelWorld world, int x, int y, int z)

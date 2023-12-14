@@ -69,7 +69,11 @@ namespace Environment {
         {
             //Debug.Log("hey");
             //Debug.Log(this);
+
+            // For some obscure reason, this is way faster
             VoxelRenderer.RenderWorld(gameObject, world, material);
+            
+            //VoxelRenderer.UpdateVoxel(gameObject, world, x, y, z);
         }
     }
 }
