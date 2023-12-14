@@ -43,6 +43,15 @@ namespace Voxels
     {
         public static void RenderWorld(GameObject parent, VoxelWorld world, Material material)
         { 
+            MeshFilter meshFilter = parent.GetComponent<MeshFilter>();
+            if (meshFilter != null) UnityEngine.Object.Destroy(meshFilter.mesh);
+            
+            MeshRenderer meshRenderer = parent.GetComponent<MeshRenderer>();
+            if (meshRenderer != null) UnityEngine.Object.Destroy(meshRenderer.material);
+
+            MeshCollider meshCollider = parent.GetComponent<MeshCollider>();
+            if (meshCollider != null) UnityEngine.Object.Destroy(meshCollider.sharedMesh);
+            
             List<Vector3> vertices = new List<Vector3>();
             List<int> renderedFaces = new List<int>();
             List<Vector2> uvs = new List<Vector2>();
@@ -84,22 +93,19 @@ namespace Voxels
             mesh.triangles = renderedFaces.ToArray();
             mesh.normals = normals.ToArray();
             mesh.SetUVs(0, uvs.ToArray());
-
-            MeshFilter meshFilter = parent.GetComponent<MeshFilter>();
+ 
             if (meshFilter == null)
             {
                 meshFilter = parent.AddComponent<MeshFilter>();
             }
             meshFilter.sharedMesh = mesh;
 
-            MeshRenderer meshRenderer = parent.GetComponent<MeshRenderer>();
             if (meshRenderer == null)
             {
                 meshRenderer = parent.AddComponent<MeshRenderer>();
             }
             meshRenderer.material = material;
 
-            MeshCollider meshCollider = parent.GetComponent<MeshCollider>();
             if (meshCollider == null)
             {
                 meshCollider = parent.AddComponent<MeshCollider>();
