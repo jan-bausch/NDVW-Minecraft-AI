@@ -94,6 +94,7 @@ namespace Player
                 
                 if (blockType == VoxelWorld.SOLID_PRECIOUS) {
                     invPrecious += 1;
+                    PlayerPrefs.SetInt("CollectedPreciousBlocks", PlayerPrefs.GetInt("CollectedPreciousBlocks", 0) + 1);
                 } else {
                     invSolid += 1;
                 }

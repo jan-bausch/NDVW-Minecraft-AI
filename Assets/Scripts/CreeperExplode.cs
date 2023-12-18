@@ -31,6 +31,8 @@ namespace Creeper
                 Invoke("OnCreeperExploded", audioSource.clip.length);
                 // Destroy player
                 Destroy(other.gameObject);
+                // Stop timer
+                PlayerPrefs.SetInt("StopTimer", 1);
             }
             if (remoteControlled && other.gameObject.name == "Player")
             {

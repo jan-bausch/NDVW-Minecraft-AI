@@ -15,13 +15,17 @@ namespace Environment {
 
         public WorldTypes worldType = WorldTypes.Flat;
         public int worldSizeX = 20;
-        public int worldSizeY = 20;
+        public int worldSizeY = 40;
         public int worldSizeZ = 20;
 
         public EditableWorld world;
 
         void Generate(int seed)
         {
+            worldSizeX = PlayerPrefs.GetInt("SizeOfWorld", 20);
+            worldSizeY = PlayerPrefs.GetInt("SizeOfWorld", 40);
+            worldSizeZ = PlayerPrefs.GetInt("SizeOfWorld", 20);
+
             VoxelWorld baseWorld = null;
             if (worldType == WorldTypes.Flat)
             {
@@ -47,6 +51,11 @@ namespace Environment {
 
         private Vector3 randomSpawnPos(int seed, int startX, int endX, int startZ, int endZ)
         {
+
+            worldSizeX = PlayerPrefs.GetInt("SizeOfWorld", 20);
+            worldSizeY = PlayerPrefs.GetInt("SizeOfWorld", 40);
+            worldSizeZ = PlayerPrefs.GetInt("SizeOfWorld", 20);
+            
             System.Random random = new System.Random(seed);
 
             int spawnX = random.Next(startX, endX);

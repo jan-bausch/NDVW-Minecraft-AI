@@ -16,6 +16,8 @@ namespace Voxels
             {
                 return VoxelWorld.AIR;
             }
+
+            float frequency = PlayerPrefs.GetFloat("Frequency", 0.5f);
             
             Random.InitState(seed);
             float perlinSeed = Random.value;
@@ -24,7 +26,8 @@ namespace Voxels
 
             if (y < 10 + perlinValue * 10 * normalizedY)
             {
-                float preciousProbability = Mathf.Lerp(0.01f, 0.07f, normalizedY);
+                float preciousProbability = Mathf.Lerp(0.01f * frequency, 0.20f * frequency, normalizedY) ;
+
                 Random.InitState(seed + x * 10000 + y * 100 + z);
 
                 if (Random.value < preciousProbability)

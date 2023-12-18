@@ -12,13 +12,24 @@ public class UIManager : MonoBehaviour
     public Text enemiesInfoText;
 
     private bool isF3Pressed = false;
-    private float updateInterval = 0.5f;
-    private float lastUpdateTime = 0f;
+    private float updateInterval = 1;
+    private float lastUpdateTime = 1.0f;
+
+    private int timer = 100;
+    private int collectedPreciousBlocks = 0;
+    private int stopTimer = 0;
 
     void Start()
     {
-        UpdateTimer(100);
-        UpdateCollectedPreciousBlocks(0);
+        PlayerPrefs.SetInt("CollectedPreciousBlocks", collectedPreciousBlocks);
+        PlayerPrefs.SetInt("Timer", timer);
+        PlayerPrefs.SetInt("StopTimer", stopTimer);
+
+        UpdateTimer(timer);
+        UpdateCollectedPreciousBlocks(collectedPreciousBlocks);
+        UpdateNumberOfCreepers(PlayerPrefs.GetInt("NumberOfCreepers"));
+        UpdateFrequencyOfPreciousBlocks(PlayerPrefs.GetFloat("Frequency"));
+        UpdateSizeOfWorld(PlayerPrefs.GetInt("SizeOfWorld"));
     }
 
     void Update()
@@ -31,10 +42,14 @@ public class UIManager : MonoBehaviour
         agentPositionText.gameObject.SetActive(isF3Pressed);
         enemiesInfoText.gameObject.SetActive(isF3Pressed);
 
+        UpdateCollectedPreciousBlocks(PlayerPrefs.GetInt("CollectedPreciousBlocks"));
+
         if (Time.time - lastUpdateTime >= updateInterval)
         {
             lastUpdateTime = Time.time;
             UpdatePositions();
+            timer = timer - 1;
+            UpdateTimer(timer);
         }
     }
 
@@ -43,7 +58,7 @@ public class UIManager : MonoBehaviour
         Vector3 agentPosition = new Vector3(Random.Range(-10, 10), 0, Random.Range(-10, 10));
         agentPositionText.text = "Agent Position: " + Mathf.RoundToInt(agentPosition.x) + ", " + Mathf.RoundToInt(agentPosition.y) + ", " + Mathf.RoundToInt(agentPosition.z);
 
-        int numberOfEnemies = Mathf.RoundToInt(PlayerPrefs.GetInt("NumberOfCreepers", 2));
+        int numberOfEnemies = Mathf.RoundToInt(PlayerPrefs.GetInt("NumberOfCreepers"));
         string enemiesInfo = "Enemies Info:\n";
 
         for (int i = 0; i < numberOfEnemies; i++)
@@ -80,6 +95,17 @@ public class UIManager : MonoBehaviour
 
     public void UpdateTimer(float value)
     {
-        timerText.text = "Remaining Time: " + Mathf.Round(value).ToString();
+        if (PlayerPrefs.GetInt("StopTimer") == 1)
+        {
+            Debug.Log("Game ended.");
+        }
+        else if (value < 0)
+        {
+            timerText.text = "Remaining Time: " + "0";
+        }
+        else 
+        {
+            timerText.text = "Remaining Time: " + Mathf.Round(value).ToString();
+        }
     }
 }
