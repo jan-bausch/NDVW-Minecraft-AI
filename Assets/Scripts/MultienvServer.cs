@@ -26,11 +26,34 @@ namespace Multienv
 
         private async Task StartServerAsync()
         {
-            try
+            int startingPort = 8080;
+            int maxAttempts = 100;
+            bool portAvailable = false;
+
+            for (int port = startingPort; port < startingPort + maxAttempts; port++)
             {
-                server = new TcpListener(IPAddress.Parse("0.0.0.0"), 8080);
-                server.Start();
-                
+                server = new TcpListener(IPAddress.Parse("0.0.0.0"), port);
+
+                try
+                {
+                    server.Start();
+                    portAvailable = true;
+                    break;
+                }
+                catch
+                {
+                    server.Stop();
+                }
+            }
+
+            if (!portAvailable)
+            {
+                Console.WriteLine("Could not start the server on any available port.");
+                return;
+            }
+            
+            try
+            {                
                 Debug.Log("Server is running on:");
                 Debug.Log("Address: " + server.LocalEndpoint);
                 Debug.Log("Port: " + ((IPEndPoint)server.LocalEndpoint).Port);

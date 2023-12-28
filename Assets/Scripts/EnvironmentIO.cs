@@ -9,6 +9,11 @@ namespace Environment
 {
     public class EnvironmentIO : MonoBehaviour
     {
+        public int previousInvPrecious = 0;
+        public int currentInvPrecious = 0;
+        public float previousDistance = 0.0f;
+        public float currentDistance = 0.0f;
+
         public bool jumping = false;
         public bool goingLeft = false;
         public bool goingRight = false;
@@ -103,24 +108,19 @@ namespace Environment
         public float GetReward()
         {
             Transform playerTransform = transform.Find("Player");
-            Transform creeperTransform = transform.Find("Creeper");
 
             if (playerTransform.position.y < 0.0f)
             {
                 return -1.0f;
             }
-            float distance = Vector3.Distance(playerTransform.position, creeperTransform.position);
-            if (distance < 0.5f)
+            if (currentDistance < 0.5f)
             {
                 return -1.0f;
             }
 
-            float distanceSignal = (float) Math.Pow(Math.Exp((double) (distance - 1.0f)), 20.0);
-            
-            BlockInteraction bi = playerTransform.gameObject.GetComponent<BlockInteraction>();
-            var (invSolid, invPrecious) = bi.GetInv();
+            var reward = 0.25f * (currentInvPrecious - previousInvPrecious);
 
-            return invPrecious;
+            return reward;
         }
 
         public void EnableRemoteControlled()
@@ -181,6 +181,11 @@ namespace Environment
             pc.lookingUp = lookingUp;
             pc.lookingDown = lookingDown;
             pc.MoveUpdate(delta);
+
+            previousDistance = currentDistance;
+            previousInvPrecious = currentInvPrecious;
+            currentDistance = Vector3.Distance(playerTransform.position, creeperTransform.position);
+            (_, currentInvPrecious) = bi.GetInv();
         }
     }
 }
