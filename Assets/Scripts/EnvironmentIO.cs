@@ -14,6 +14,9 @@ namespace Environment
         public float previousDistance = 0.0f;
         public float currentDistance = 0.0f;
 
+        public bool previouslyDead = false;
+        public bool dead = false;
+
         public bool jumping = false;
         public bool goingLeft = false;
         public bool goingRight = false;
@@ -109,13 +112,12 @@ namespace Environment
         {
             Transform playerTransform = transform.Find("Player");
 
-            if (playerTransform.position.y < 0.0f)
+            if (!previouslyDead && dead)
             {
                 return -1.0f;
-            }
-            if (currentDistance < 0.5f)
+            } else if (dead)
             {
-                return -1.0f;
+                return 0.0f;
             }
 
             var reward = 0.25f * (currentInvPrecious - previousInvPrecious);
@@ -184,8 +186,19 @@ namespace Environment
 
             previousDistance = currentDistance;
             previousInvPrecious = currentInvPrecious;
+            previouslyDead = dead;
+
             currentDistance = Vector3.Distance(playerTransform.position, creeperTransform.position);
             (_, currentInvPrecious) = bi.GetInv();
+
+            if (playerTransform.position.y < 0.0f)
+            {
+                dead = true;
+            }
+            if (currentDistance < 0.5f)
+            {
+                dead = true;
+            }
         }
     }
 }

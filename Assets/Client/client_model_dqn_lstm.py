@@ -7,13 +7,14 @@ import argparse
 import csv
 import time
 import copy
+import math
 
 # TCP server address and port
 SERVER_PORT = 8080
 
 SEED = 3
-PARALLEL_EPISODES = 64
-PARALLEL_SERVERS = 4
+PARALLEL_EPISODES = 100
+PARALLEL_SERVERS = 5
 TRAIN_VALID_SPLIT = 0.8
 TRAIN_EPISODES = int(PARALLEL_EPISODES * TRAIN_VALID_SPLIT)
 VALID_EPISODES = PARALLEL_EPISODES - TRAIN_EPISODES
@@ -129,7 +130,7 @@ optimizer = torch.optim.Adam(model.parameters())
 BASE_EPSILON = 1
 MIN_EPSILON = 0.1
 BATCH_SIZE = PARALLEL_EPISODES  # no memory replay, learning directly from stream
-EXPLORATORY_FRAMES = 4_000_000
+EXPLORATORY_FRAMES = 1_000_000
 N_STEPS = 10
 MAX_TARGET_INDEPENDENCE_STEPS = 30
 MAX_TARGET_INDEPENDENCE_FRAMES = (
@@ -243,6 +244,12 @@ def neural_model_no_training(server_index, worlds_states):
     return actions
 
 
+def get_epsilon():
+    exploration = (math.cos((trained_frames_count * 6.28) / EXPLORATORY_FRAMES)+1)/2
+    print(f"Exploration: {exploration}")
+    return MIN_EPSILON + exploration * (BASE_EPSILON - MIN_EPSILON)
+
+
 def neural_model(server_index, worlds_states, worlds_rewards):
     global previous_data
     global last_times
@@ -328,9 +335,8 @@ def neural_model(server_index, worlds_states, worlds_rewards):
         actions_values = model(worlds_states_tensor)
 
     actions = [None for _ in range(PARALLEL_EPISODES)]
-    exploration_progress = min(1, trained_frames_count / EXPLORATORY_FRAMES)
-    print(f"Exploration progress: {exploration_progress}")
-    epsilon = BASE_EPSILON - exploration_progress * (BASE_EPSILON - MIN_EPSILON)
+    epsilon = get_epsilon()
+    print(f"Epsilon: {epsilon}")
     for i in range(TRAIN_EPISODES):
         if random.random() < epsilon:
             actions[i] = random.randint(0, OUTPUT_DIM - 1)
@@ -469,7 +475,9 @@ def receive_frame_data():
                 episode_changing_now[server_index] = True
                 continue
 
-            worlds_data[server_index][world_id].append({"state": game_state, "reward": reward_signal})
+            worlds_data[server_index][world_id].append(
+                {"state": game_state, "reward": reward_signal}
+            )
 
             step_ready = True
             for world_id in range(PARALLEL_EPISODES):
@@ -495,8 +503,12 @@ def receive_frame_data():
                 worlds_states = [None for _ in range(PARALLEL_EPISODES)]
                 worlds_rewards = [None for _ in range(PARALLEL_EPISODES)]
                 for world_id in range(PARALLEL_EPISODES):
-                    worlds_states[world_id] = worlds_data[server_index][world_id][0]["state"]
-                    worlds_rewards[world_id] = worlds_data[server_index][world_id][0]["reward"]
+                    worlds_states[world_id] = worlds_data[server_index][world_id][0][
+                        "state"
+                    ]
+                    worlds_rewards[world_id] = worlds_data[server_index][world_id][0][
+                        "reward"
+                    ]
                     worlds_data[server_index][world_id].pop(0)
 
                 actions = [None for _ in range(PARALLEL_EPISODES)]
@@ -521,9 +533,7 @@ def receive_frame_data():
                 ] = target_model.get_lstm_hidden()
 
                 if PARALLEL_SERVERS > 3:
-                    new_server_index = random.randint(0, PARALLEL_SERVERS - 1)
-                    if new_server_index == server_index:
-                        new_server_index = (new_server_index + 1) % PARALLEL_SERVERS
+                    new_server_index = (server_index + random.randint(1, PARALLEL_SERVERS - 1)) % PARALLEL_SERVERS
                     print(f"Server {server_index} -> {new_server_index}")
                     server_index = new_server_index
                 else:
@@ -577,7 +587,9 @@ if __name__ == "__main__":
     if args.load_weights:
         # Load weights if provided through command line arguments
         snapshot_epochs = int(args.load_weights.split("_")[-1][:-3])
-        steps_counters = [snapshot_epochs // PARALLEL_SERVERS for _ in range(PARALLEL_SERVERS)]
+        steps_counters = [
+            snapshot_epochs // PARALLEL_SERVERS for _ in range(PARALLEL_SERVERS)
+        ]
         trained_frames_count = int(
             (snapshot_epochs - (BATCH_SIZE / PARALLEL_EPISODES)) * BATCH_SIZE
         )
