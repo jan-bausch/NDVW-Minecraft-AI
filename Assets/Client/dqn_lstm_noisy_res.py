@@ -116,9 +116,9 @@ class DQN(nn.Module):
         self.residual7 = ResidualBlock(512)
         self.residual8 = ResidualBlock(512)
 
-        self.fc1 = NoisyLinear(self.calculate_conv_output_dim() + other_dim, 256)
+        self.fc1 = NoisyLinear(self.calculate_conv_output_dim() + other_dim, 256, std_init=0.5)
         self.bnfc1 = nn.BatchNorm1d(256)
-        self.fc2 = NoisyLinear(256, 128)
+        self.fc2 = NoisyLinear(256, 128, std_init=0.5)
         self.lstm_num_layers = 1
         self.lstm_hidden_dim = 64
         self.lstm = nn.LSTM(
@@ -127,7 +127,7 @@ class DQN(nn.Module):
             hidden_size=self.lstm_hidden_dim,
             batch_first=True,
         )
-        self.fc3 = NoisyLinear(64, output_dim)
+        self.fc3 = NoisyLinear(64, output_dim, std_init=0.5)
         self.init_hidden(1)
 
     def init_hidden(self, batch_size):
@@ -176,6 +176,7 @@ class DQN(nn.Module):
         self.lstm.flatten_parameters()
         x_other = x[:, : self.other_dim]
         x_frame = x[:, self.other_dim :]
+
         x = x_frame.view(
             x.size(0), self.frame_channels, self.frame_dim[0], self.frame_dim[1]
         )  # Reshape input to (batch_size, channels, height, width)
@@ -208,6 +209,11 @@ class DQN(nn.Module):
         x = self.fc3(x)
         return x
     
+    def reset_noise(self):
+        self.fc1.reset_noise()
+        self.fc2.reset_noise()
+        self.fc3.reset_noise()
+    
 
 class DqnLstmNoisyResModel(Model):
     config: Config
@@ -226,6 +232,8 @@ class DqnLstmNoisyResModel(Model):
     target_independence_frames: int = 0
     
     def __init__(self, config: Config):
+        super().__init__()
+
         self.config = config
         self.net = DQN(
             (config.input_visual_dim[0], config.input_visual_dim[1]),
@@ -241,6 +249,8 @@ class DqnLstmNoisyResModel(Model):
         )
         self.target_net.load_state_dict(self.net.state_dict())
         self.device = torch.device("cpu")
+        self.net.to(self.device)
+        self.target_net.to(self.device)
         self.seed = 0
         _config = config.get_parseable_config()
         self.gamma = _config.getfloat("model", "gamma")
@@ -253,6 +263,12 @@ class DqnLstmNoisyResModel(Model):
     def inference(self, states: list[list[int]], force_greedy: bool = False) -> list[int]:
         states_tensor = torch.tensor(states, dtype=torch.float32, device=self.device)
         self.net.eval()
+        with torch.no_grad():
+            return self.net(states_tensor).argmax(dim=1).tolist()
+
+    def inference_train(self, states: list[list[int]], force_greedy: bool = False) -> list[int]:
+        states_tensor = torch.tensor(states, dtype=torch.float32, device=self.device)
+        self.net.train()
         with torch.no_grad():
             return self.net(states_tensor).argmax(dim=1).tolist()
 
@@ -283,6 +299,9 @@ class DqnLstmNoisyResModel(Model):
         self.net.to(device)
         self.target_net.to(device)
 
+    def get_device(self) -> torch.device:
+        return self.device
+
     def set_seed(self, seed: int):
         self.seed = seed
 
@@ -291,22 +310,23 @@ class DqnLstmNoisyResModel(Model):
             self.previous_n.pop(0)
         self.previous_n.append({"states": states, "rewards": rewards, "actions": actions})
 
-    
     def train(self, states: list[list[int]], actions: list[int], rewards: list[float]):
         self.net.train()
-        self.target_net.eval()
-        batch_size = len(states[0])
+        self.target_net.train()
+        batch_size = len(states)
 
         worlds_states_tensor = torch.tensor(
             states, dtype=torch.float32, device=self.device
         )
-        
+
         n_steps = min(self.n_step, len(self.previous_n))
         if n_steps == 0:
+            self._push_previous(states, rewards, actions)
             return
 
-        previous_states = [previous["states"] for previous in self.previous_n[:n_steps]]
-        previous_actions = [previous["actions"] for previous in self.previous_n[:n_steps]]
+        previous_state = self.previous_n[-n_steps]["states"]
+        previous_actions = self.previous_n[-n_steps]["actions"]
+
         previous_rewards = [previous["rewards"] for previous in self.previous_n[:n_steps]]
 
         targets = torch.tensor(
@@ -316,15 +336,16 @@ class DqnLstmNoisyResModel(Model):
             [0 for _ in range(batch_size)], dtype=torch.float32, device=self.device
         )
         previous_worlds_states_tensor = torch.tensor(
-            previous_states, dtype=torch.float32, device=self.device
+            previous_state, dtype=torch.float32, device=self.device
         )
+
         prediction_actions_values = self.net(previous_worlds_states_tensor)
         target_actions_values = self.target_net(worlds_states_tensor)
 
-        variances = torch.var(target_actions_values, dim=0)
-        print(f"Q* values min variance: {variances.min().item()}")
-        variances = torch.var(prediction_actions_values, dim=0)
-        print(f"Q values min variance: {variances.min().item()}")
+        #variances = torch.var(target_actions_values, dim=0)
+        #print(f"Q* values min variance: {variances.min().item()}")
+        #variances = torch.var(prediction_actions_values, dim=0)
+        #print(f"Q values min variance: {variances.min().item()}")
 
         for i in range(batch_size):
             target_action = torch.argmax(target_actions_values[i]).item()
@@ -342,27 +363,30 @@ class DqnLstmNoisyResModel(Model):
         self.optimizer.step()
         loss_value = loss.item()
 
+        self.net.reset_noise()
+        self.target_net.reset_noise()
+
         self.trained_frames_count += batch_size
         self.target_independence_frames += batch_size
+
+        self._push_previous(states, rewards, actions)
 
         print(f"Trained frames: {self.trained_frames_count}")
         if self.target_independence_frames >= 10_000:
             print("Updating target model")
             self.target_independence_frames = 0
             self.target_net = DQN(
-                (self.config.input_visual_dim[1], self.config.input_visual_dim[2]),
-                self.config.input_visual_dim[0],
+                (self.config.input_visual_dim[0], self.config.input_visual_dim[1]),
+                self.config.input_visual_dim[2],
                 self.config.input_state_dim,
                 self.config.output_dim,
             )
             self.target_net.load_state_dict(self.net.state_dict())
             self.target_net.to(self.device)     
 
-        self._push_previous(states, rewards, actions)
-
         with open(f"{self.config.model}_training_data.csv", mode="a") as file:
             csv_writer = csv.writer(file)
-            file.seek(0, 2)
+            file.seek(0, 1)
 
             if file.tell() == 0:
                 csv_writer.writerow(
@@ -374,9 +398,8 @@ class DqnLstmNoisyResModel(Model):
                     ]
                 )
 
-
-            prediction_q_values_string = ' '.join(map(str, predictions.mean(dim=0).tolist()))
-            target_q_values_string = ' '.join(map(str, targets.mean(dim=0).tolist()))
+            prediction_q_values_string = ' '.join(map(str, prediction_actions_values.mean(dim=0).tolist()))
+            target_q_values_string = ' '.join(map(str, target_actions_values.mean(dim=0).tolist()))
             csv_writer.writerow(
                 [
                     self.trained_frames_count,

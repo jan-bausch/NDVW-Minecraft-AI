@@ -1,6 +1,7 @@
 import datetime
 import os
 import typing
+import ray
 import torch
 
 from generating import GenerationInfo
@@ -31,7 +32,7 @@ def load_checkpoint(
             ".params.pt"
         ):
             model = get_model(config)
-            model.set_params(torch.load(f"{checkpoint_dirname}/{filename}"))
+            model.set_params(torch.load(f"{checkpoint_dirname}/{filename}", map_location=torch.device(config.device)))
             state_filename = filename.replace(".params.pt", ".state.pt")
             model.set_state(torch.load(f"{checkpoint_dirname}/{state_filename}"))
             server_index = int(
@@ -42,13 +43,13 @@ def load_checkpoint(
             learner_infos = ReplayingInfo.parse(f"{checkpoint_dirname}/{filename}")
         elif filename == "learner_model.params.pt":
             learner_model = get_model(config)
-            learner_model.set_params(torch.load(f"{checkpoint_dirname}/{filename}"))
+            learner_model.set_params(torch.load(f"{checkpoint_dirname}/{filename}", map_location=torch.device(config.device)))
             learner_model.set_state(
                 torch.load(f"{checkpoint_dirname}/learner_model.state.pt")
             )
         elif filename == "replay_memory.pickle":
             with open(f"{checkpoint_dirname}/{filename}", "rb") as f:
-                replay_memory = ReplayMemory.deserialize(f.read())
+                replay_memory = ReplayMemory.deserialize(config, f.read())
 
     return (
         config,
@@ -63,13 +64,15 @@ def load_checkpoint(
 def checkpoint(
     config: Config,
     generation_infos: list[GenerationInfo],
-    generation_models: list[Model],
+    generation_models_params: list[dict],
+    generation_models_state: list[dict],
     learner_infos: ReplayingInfo,
-    learner_model: Model,
+    learner_model_params: dict,
+    learner_model_state: dict,
     replay_memory: ReplayMemory,
 ):
     _config = config.get_parseable_config()
-    checkpoint_time_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    checkpoint_time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     if not os.path.exists("checkpoints"):
         os.mkdir("checkpoints")
@@ -88,10 +91,10 @@ def checkpoint(
         with open(f"{dirname}/{filename}", "w") as f:
             f.write(text)
 
-    for i, model in enumerate(generation_models):
+    for i in range(len(generation_models_params)):
         filename = f"generation_model_{i}.params.pt"
-        torch.save(model.get_params(), f"{dirname}/{filename}")
-        state = model.get_state()
+        torch.save(generation_models_params[i], f"{dirname}/{filename}")
+        state = generation_models_state[i]
         filename = f"generation_model_{i}.state.pt"
         torch.save(state, f"{dirname}/{filename}")
 
@@ -101,12 +104,12 @@ def checkpoint(
         f.write(text)
 
     filename = f"learner_model.params.pt"
-    torch.save(learner_model.get_params(), f"{dirname}/{filename}")
+    torch.save(learner_model_params, f"{dirname}/{filename}")
 
-    state = learner_model.get_state()
+    state = learner_model_state
     filename = f"learner_model.state.pt"
     torch.save(state, f"{dirname}/{filename}")
 
     replay_memory_filename = f"replay_memory.pickle"
     with open(f"{dirname}/{replay_memory_filename}", "wb") as f:
-        f.write(replay_memory.serialize())
+        f.write(ray.get(replay_memory.serialize.remote()))

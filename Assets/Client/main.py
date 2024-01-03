@@ -58,3 +58,7 @@ if __name__ == "__main__":
         replay_memory,
         learner_infos,
     )
+
+    learning_process.run.remote()
+
+    ray.get([learning_process.run.remote()])

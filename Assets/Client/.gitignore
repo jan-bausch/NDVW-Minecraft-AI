@@ -1,3 +1,6 @@
 *.db
 *.meta
 *.csv
+checkpoints/
+params_temp.pt
+state_temp.pt
