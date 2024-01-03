@@ -244,7 +244,7 @@ BASE_EPSILON = 1
 MIN_EPSILON = 0.1
 BATCH_SIZE = PARALLEL_EPISODES  # no memory replay, learning directly from stream
 EXPLORATORY_FRAMES = 1_000_000
-N_STEPS = 10
+N_STEPS = 50
 MAX_TARGET_INDEPENDENCE_STEPS = 30
 MAX_TARGET_INDEPENDENCE_FRAMES = (
     BATCH_SIZE * PARALLEL_SERVERS * MAX_TARGET_INDEPENDENCE_STEPS
@@ -261,6 +261,7 @@ previous_data = [
 ]
 
 previous_episodes = [0 for _ in range(PARALLEL_SERVERS)]
+last_episode_change = [0 for _ in range(PARALLEL_SERVERS)]
 
 total_q_values = 0
 total_rewards = 0
@@ -300,21 +301,21 @@ def get_calls_per_second():
 
 def get_previous_states(server_index, t):
     previous_states = previous_data[server_index]["states"]
-    if len(previous_states) < t:
+    if t > 0 and len(previous_states) < t:
         return None
     return previous_states[-t]
 
 
 def get_previous_action(server_index, t):
     previous_actions = previous_data[server_index]["actions"]
-    if len(previous_actions) < t:
+    if t > 0 and len(previous_actions) < t:
         return None
     return previous_actions[-t]
 
 
 def get_previous_reward(server_index, t):
     previous_rewards = previous_data[server_index]["rewards"]
-    if len(previous_rewards) < t:
+    if t > 0 and len(previous_rewards) < t:
         return None
     return previous_rewards[-t]
 
@@ -340,7 +341,9 @@ def neural_model_no_training(server_index, worlds_states):
     calls_per_sec = get_calls_per_second()
     print(f"Calls per second: {calls_per_sec}")
 
-    if previous_episodes[server_index] < episodes_counters[server_index]:
+    is_new_episode = previous_episodes[server_index] < episodes_counters[server_index]
+
+    if is_new_episode:
         previous_episodes[server_index] = episodes_counters[server_index]
         model.reset_lstm(BATCH_SIZE)
         target_model.reset_lstm(BATCH_SIZE)
@@ -358,7 +361,9 @@ def neural_model_no_training(server_index, worlds_states):
 
 
 def get_epsilon():
-    exploration = (math.cos((trained_frames_count * 6.28) / EXPLORATORY_FRAMES)+1)/2
+    exploration = (math.cos(
+        (trained_frames_count * 6.28) / EXPLORATORY_FRAMES
+    )+1)/2
     print(f"Exploration: {exploration}")
     return MIN_EPSILON + exploration * (BASE_EPSILON - MIN_EPSILON)
 
@@ -379,9 +384,11 @@ def neural_model(server_index, worlds_states, worlds_rewards):
     worlds_states_tensor = torch.tensor(
         worlds_states, dtype=torch.float32, device=device
     )
-
-    if previous_episodes[server_index] < episodes_counters[server_index]:
+    
+    is_new_episode = previous_episodes[server_index] < episodes_counters[server_index]
+    if is_new_episode:
         previous_episodes[server_index] = episodes_counters[server_index]
+        last_episode_change[server_index] = 0
         model.reset_lstm(BATCH_SIZE)
         target_model.reset_lstm(BATCH_SIZE)
 
@@ -391,10 +398,11 @@ def neural_model(server_index, worlds_states, worlds_rewards):
     loss_value = None
     prediction_actions_values = None
 
-    previous_states = get_previous_states(server_index, N_STEPS)
-    previous_actions = get_previous_action(server_index, N_STEPS)
+    n_steps = min(N_STEPS,last_episode_change[server_index])
+    previous_states = get_previous_states(server_index, n_steps)
+    previous_actions = get_previous_action(server_index, n_steps)
     previous_rewards_n_steps = [
-        get_previous_reward(server_index, i) for i in range(1, N_STEPS + 1)
+        get_previous_reward(server_index, i) for i in range(1, n_steps + 1)
     ][::-1]
 
     if previous_states is not None and previous_actions is not None:
@@ -422,9 +430,9 @@ def neural_model(server_index, worlds_states, worlds_rewards):
             action = previous_actions[i]
             predictions[i] = prediction_actions_values[i][action]
             targets[i] = worlds_rewards[i]
-            for j in range(N_STEPS):
+            for j in range(n_steps):
                 targets[i] += previous_rewards_n_steps[j][i] * (gamma ** (j + 1))
-            targets[i] += target_action_value * (gamma ** (N_STEPS + 1))
+            targets[i] += target_action_value * (gamma ** (n_steps + 1))
 
         loss = criterion(predictions, targets)
         optimizer.zero_grad()
@@ -503,8 +511,10 @@ def neural_model(server_index, worlds_states, worlds_rewards):
             f"Average Q-value: {avg_q_value}\nAverage Train Q-value: {avg_train_q_value}\nAverage reward: {avg_reward}\nAverage Train reward: {avg_train_reward}\nLoss: {loss_value}"
         )
 
-    if trained_frames_count % (30 * BATCH_SIZE) == 0 and trained_frames_count > 0:
+    if trained_frames_count % (90 * BATCH_SIZE) == 0 and trained_frames_count > 0:
         save_weights(model, trained_frames_count, sum(steps_counters))
+
+    last_episode_change[server_index] += 1
 
     return actions
 
