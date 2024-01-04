@@ -116,9 +116,9 @@ class DQN(nn.Module):
         self.residual7 = ResidualBlock(512)
         self.residual8 = ResidualBlock(512)
 
-        self.fc1 = NoisyLinear(self.calculate_conv_output_dim() + other_dim, 256, std_init=0.5)
+        self.fc1 = NoisyLinear(self.calculate_conv_output_dim() + other_dim, 256, std_init=0.75)
         self.bnfc1 = nn.BatchNorm1d(256)
-        self.fc2 = NoisyLinear(256, 128, std_init=0.5)
+        self.fc2 = NoisyLinear(256, 128, std_init=0.75)
         self.lstm_num_layers = 1
         self.lstm_hidden_dim = 64
         self.lstm = nn.LSTM(
@@ -127,7 +127,7 @@ class DQN(nn.Module):
             hidden_size=self.lstm_hidden_dim,
             batch_first=True,
         )
-        self.fc3 = NoisyLinear(64, output_dim, std_init=0.5)
+        self.fc3 = NoisyLinear(64, output_dim, std_init=0.75)
         self.init_hidden(1)
 
     def init_hidden(self, batch_size):

@@ -36,7 +36,7 @@ def launch_generation_clients(
     return clients
 
 
-@ray.remote(num_gpus=0.1, num_cpus=1)
+@ray.remote(num_gpus=0.05, num_cpus=0.5)
 class Client:
     config: Config
     model: Model
@@ -92,7 +92,9 @@ class Client:
     async def run(self):
         worlds_data = [[] for _ in range(self.config.parallel_worlds)]
         episode_changing_now = False
-        trajectory_ids = ray.get([self.replay_memory.new_trajectory.remote() for _ in range(self.config.parallel_worlds)])
+        trajectory_ids = await asyncio.gather(*[self.replay_memory.new_trajectory.remote() for _ in range(self.config.parallel_worlds)])
+
+        replay_memory_pushs = []
 
         while True:
             await asyncio.sleep(0.01)
@@ -127,14 +129,26 @@ class Client:
                 % self.config.steps_per_episode
                 == self.config.steps_per_episode - 1
             ):
-                for trajectory_id in trajectory_ids:
-                    self.replay_memory.complete_trajectory.remote(trajectory_id)
+                print(f"New episode for server {self.generation_infos.server_index}")
+                
+                if not self.generation_infos.validation:
+                    print("Waiting for replay memory pushs")
+                    await asyncio.gather(*replay_memory_pushs)
+                    
+                    print("Completing trajectories")
+                    await asyncio.gather(*[
+                        self.replay_memory.complete_trajectory.remote(trajectory_id) for trajectory_id in trajectory_ids
+                    ])
+
+                replay_memory_pushs = []
                 
                 self.generation_infos.current_step = 0
                 self.generation_infos.current_episode += 1
                 self.seed += 1
 
                 worlds_data = [[] for _ in range(self.config.parallel_worlds)]
+                
+                print("Sending new episode instruction")
                 self.socket.sendall(
                     struct.pack(
                         "<ii",
@@ -142,15 +156,12 @@ class Client:
                         self.config.parallel_worlds,
                     )
                 )
-                print(f"New episode for server {self.generation_infos.server_index}")
-                
-                if self.next_params is not None:
-                    self.model.set_params(self.next_params)
-                    self.next_params = None
 
                 self.model.reset_state()
 
-                trajectory_ids = ray.get([self.replay_memory.new_trajectory.remote() for _ in range(self.config.parallel_worlds)])
+                if not self.generation_infos.validation:
+                    print("Waiting for new trajectories")
+                    trajectory_ids = await asyncio.gather(*[self.replay_memory.new_trajectory.remote() for _ in range(self.config.parallel_worlds)])
 
                 episode_changing_now = True
                 continue
@@ -173,18 +184,23 @@ class Client:
                     worlds_rewards[world_id] = worlds_data[world_id][0]["reward"]
                     worlds_data[world_id].pop(0)
 
-                actions = self.model.inference_train(worlds_states)
+                actions = []
 
-                for world_id in range(self.config.parallel_worlds):
-                    self.replay_memory.push.remote(
-                        Transition(
-                            worlds_states[world_id],
-                            actions[world_id],
-                            worlds_rewards[world_id],
-                            1+abs(worlds_rewards[world_id]),
-                        ),
-                        trajectory_ids[world_id],
-                    )
+                if self.generation_infos.validation:
+                    actions = self.model.inference(worlds_states)
+                else:
+                    actions = self.model.inference_train(worlds_states)
+
+                    for world_id in range(self.config.parallel_worlds):
+                        replay_memory_pushs.append(self.replay_memory.push.remote(
+                            Transition(
+                                worlds_states[world_id],
+                                actions[world_id],
+                                worlds_rewards[world_id],
+                                abs(worlds_rewards[world_id]),
+                            ),
+                            trajectory_ids[world_id],
+                        ))
 
                 #print(random.sample(actions, min(10, len(actions))))
 
@@ -197,7 +213,13 @@ class Client:
                 self.generation_infos.current_step += 1
                 episode_changing_now = False
 
-                with open(f"generation_server_{self.generation_infos.server_index}_data.csv", mode="a") as file:
+                if self.next_params is not None:
+                    print("Applying model update")
+                    self.model.set_params(self.next_params)
+                    self.next_params = None
+
+                validation_indicator =  "_validation" if self.generation_infos.validation else ""
+                with open(f"generation_server_{self.generation_infos.server_index}{validation_indicator}_data.csv", mode="a") as file:
                     csv_writer = csv.writer(file)
                     file.seek(0, 1)
 

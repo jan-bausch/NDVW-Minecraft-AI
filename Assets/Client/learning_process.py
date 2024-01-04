@@ -38,28 +38,28 @@ class LearningProcess:
         self.replay_memory = replay_memory
         self.replay_info = replay_info
 
-    def run(self):
+    async def run(self):
         while True:
-            self.train_trajectory()
+            await self.train_trajectory()
             self.model.reset_state()
             self.replay_info.current_step = 0
             self.replay_info.current_trajectory_indexes = []
 
-    def train_trajectory(self):
+    async def train_trajectory(self):
         trajectories = []
         trajectories_indices = []
         if len(self.replay_info.current_trajectory_indexes) == 0:
-            trajectories, trajectories_indices = ray.get(self.replay_memory.sample_trajectories.remote(
+            trajectories, trajectories_indices = await self.replay_memory.sample_trajectories.remote(
                 self.config.batch_size
-            ))
+            )
             self.replay_info.current_trajectory_indexes = [
                 i for i in range(len(trajectories))
             ]
         else:
             trajectories_indices = self.replay_info.current_trajectory_indexes
-            trajectories = ray.get(self.replay_memory.get_trajectories.remote(
+            trajectories = await self.replay_memory.get_trajectories.remote(
                 trajectories_indices
-            ))
+            )
 
         self.replay_info.current_trajectory_indexes = trajectories_indices
 
@@ -67,6 +67,8 @@ class LearningProcess:
             print("No complete trajectories yet")
             time.sleep(60)
             return
+
+        print(f"New replay trajectories.\nTrajectories count: {len(trajectories)}")
 
         while self.replay_info.current_step < len(trajectories[0]):
             print(
@@ -76,16 +78,16 @@ class LearningProcess:
             self.replay_info.current_step += 1
             self.steps += 1
 
-            if self.steps % 100 == 0:
+            if self.steps % 200 == 0:
                 print("Checkpoint time")
 
-                generation_infos = ray.get(
+                generation_infos = await asyncio.gather(*
                     [
                         generation_process.get_info.remote()
                         for generation_process in self.generation_processes
                     ]
                 )
-                generation_models_params_states = ray.get(
+                generation_models_params_states = await asyncio.gather(*
                     [
                         generation_process.get_model.remote()
                         for generation_process in self.generation_processes
@@ -120,10 +122,10 @@ class LearningProcess:
                     client.update_model.remote("params_temp.pt")
 
     def train_step(self, trajectories: list[list[Transition]]):
-        states_sizes = [len(trajectories[i]) for i in range(len(trajectories))]
+        #states_sizes = [len(trajectories[i]) for i in range(len(trajectories))]
         #print(f"States sizes: {states_sizes}")
-        print(f"Min states size: {min(states_sizes)}")
-        print(f"Max states size: {max(states_sizes)}")
+        # print(f"Min states size: {min(states_sizes)}")
+        # print(f"Max states size: {max(states_sizes)}")
 
         states = [
             trajectories[i][self.replay_info.current_step].state

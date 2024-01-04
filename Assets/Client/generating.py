@@ -8,7 +8,7 @@ class GenerationInfo:
     server_index: int
     current_episode: int
     current_step: int
-    validation = False
+    validation: bool
 
     def to_config_text(self) -> str:
         return f"""[generation]

@@ -47,9 +47,9 @@ def load_checkpoint(
             learner_model.set_state(
                 torch.load(f"{checkpoint_dirname}/learner_model.state.pt")
             )
-        elif filename == "replay_memory.pickle":
-            with open(f"{checkpoint_dirname}/{filename}", "rb") as f:
-                replay_memory = ReplayMemory.deserialize(config, f.read())
+        # elif filename == "replay_memory.pickle":
+        #     with open(f"{checkpoint_dirname}/{filename}", "rb") as f:
+        #         replay_memory = ReplayMemory.deserialize(config, f.read())
 
     return (
         config,
@@ -110,6 +110,6 @@ def checkpoint(
     filename = f"learner_model.state.pt"
     torch.save(state, f"{dirname}/{filename}")
 
-    replay_memory_filename = f"replay_memory.pickle"
-    with open(f"{dirname}/{replay_memory_filename}", "wb") as f:
-        f.write(ray.get(replay_memory.serialize.remote()))
+    # replay_memory_filename = f"replay_memory.pickle"
+    # with open(f"{dirname}/{replay_memory_filename}", "wb") as f:
+    #     f.write(ray.get(replay_memory.serialize.remote()))

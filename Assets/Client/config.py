@@ -8,6 +8,7 @@ class Config:
     parallel_worlds: int
     batch_size: int
     generation_servers: int
+    validation_servers: int
     replay_trajectories: int
     steps_per_episode: int
     input_visual_dim: tuple[int, int, int]
@@ -23,6 +24,7 @@ class Config:
         self.parallel_worlds=config.getint('config', 'parallel_worlds')
         self.batch_size=config.getint('config', 'batch_size')
         self.generation_servers=config.getint('config', 'generation_servers')
+        self.validation_servers=config.getint('config', 'validation_servers')
         self.replay_trajectories=config.getint('config', 'replay_trajectories')
         self.steps_per_episode=config.getint('config', 'steps_per_episode')
         self.input_visual_dim=tuple(map(int, config.get('config', 'input_visual_dim').split(',')))
