@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Player;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace Creeper 
 {
@@ -33,6 +36,9 @@ namespace Creeper
                 Destroy(other.gameObject);
                 // Stop timer
                 PlayerPrefs.SetInt("StopTimer", 1);
+                PlayerPrefs.SetString("EndSceneText", "You lose");
+                SceneManager.LoadScene(2);
+                
             }
             if (remoteControlled && other.gameObject.name == "Player")
             {

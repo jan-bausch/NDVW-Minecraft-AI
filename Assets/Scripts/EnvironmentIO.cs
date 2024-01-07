@@ -4,6 +4,9 @@ using UnityEngine;
 using Player;
 using System;
 using Creeper;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 namespace Environment
 {
@@ -117,8 +120,14 @@ namespace Environment
 
             float distanceSignal = (float) Math.Pow(Math.Exp((double) (distance - 1.0f)), 20.0);
             
+
             BlockInteraction bi = playerTransform.gameObject.GetComponent<BlockInteraction>();
             var (invSolid, invPrecious) = bi.GetInv();
+
+            if (!bi.remoteControlled) {
+                PlayerPrefs.SetString("EndSceneText", "You win");
+                SceneManager.LoadScene(2);
+            }
 
             return invPrecious;
         }

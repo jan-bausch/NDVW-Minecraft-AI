@@ -71,6 +71,7 @@ namespace Player
                 } else if (invPrecious > 0) {
                     blockType = VoxelWorld.SOLID_PRECIOUS;
                     invPrecious -= 1;
+                    PlayerPrefs.SetInt("CollectedPreciousBlocks", PlayerPrefs.GetInt("CollectedPreciousBlocks", 0) - 1);
                 }
                 world.SetBlock(roundedX, roundedY, roundedZ, blockType);
             }
