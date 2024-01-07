@@ -41,11 +41,52 @@ namespace Environment {
             VoxelRenderer.RenderWorld(gameObject, world, material);
 
             Transform playerTransform = transform.Find("Player");
-            playerTransform.position = transform.position + randomSpawnPos(seed, 5, 10, 5, 10);
+            // playerTransform.position = transform.position + randomSpawnPos(seed, 5, 10, 5, 10);
+            // Spawn player in the upper part of the bottom left quadrant
+            playerTransform.position = transform.position + randomSpawnPos(seed, 
+                                                                           Mathf.FloorToInt(worldSizeX / 8), 
+                                                                           Mathf.FloorToInt(3 * worldSizeX / 8), 
+                                                                           Mathf.FloorToInt(2 * worldSizeZ / 8), 
+                                                                           Mathf.FloorToInt(4 * worldSizeZ / 8));
 
-            Transform creeperTransform = transform.Find("Creeper");
-            Vector3 creeperPos = transform.position + randomSpawnPos(seed, worldSizeX-5, worldSizeX-1, worldSizeZ-5, worldSizeZ-1);
-            creeperTransform.position = creeperPos;
+            for (int i = 1; i <= PlayerPrefs.GetInt("NumberOfCreepers"); i++)
+            {
+                Transform creeperTransform = transform.Find("Creeper"+i);
+                Vector3 creeperPos = Vector3.zero;
+                // Spawn creeper in upper right quadrant 
+                if (i == 1) {
+                    creeperPos = transform.position + randomSpawnPos(seed, 
+                                                                     Mathf.FloorToInt(5 *worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(7 * worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(5 * worldSizeZ / 8), 
+                                                                     Mathf.FloorToInt(7 * worldSizeZ / 8));
+                }
+                // Spawn creeper in upper left quadrant 
+                else if (i == 2) {
+                    creeperPos = transform.position + randomSpawnPos(seed, 
+                                                                     Mathf.FloorToInt(worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(3 * worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(5 * worldSizeZ / 8), 
+                                                                     Mathf.FloorToInt(7 * worldSizeZ / 8));
+                }
+                // Spawn creeper in lower right quadrant 
+                else if (i == 3) {
+                    creeperPos = transform.position + randomSpawnPos(seed, 
+                                                                     Mathf.FloorToInt(5 *worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(7 * worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(worldSizeZ / 8), 
+                                                                     Mathf.FloorToInt(3 * worldSizeZ / 8));
+                }
+                // Spawn creeper in the lower part of the bottom left quadrant
+                else if (i == 4) {
+                    creeperPos = transform.position + randomSpawnPos(seed, 
+                                                                     Mathf.FloorToInt(worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(3 * worldSizeX / 8), 
+                                                                     Mathf.FloorToInt(0 * worldSizeZ / 8), 
+                                                                     Mathf.FloorToInt(2 * worldSizeZ / 8));
+                }
+                creeperTransform.position = creeperPos;
+            }
             Physics.SyncTransforms();
         }
 
