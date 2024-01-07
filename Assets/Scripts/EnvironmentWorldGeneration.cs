@@ -48,7 +48,7 @@ namespace Environment {
                                                                            Mathf.FloorToInt(3 * worldSizeX / 8), 
                                                                            Mathf.FloorToInt(2 * worldSizeZ / 8), 
                                                                            Mathf.FloorToInt(4 * worldSizeZ / 8));
-
+                                                                           
             for (int i = 1; i <= PlayerPrefs.GetInt("NumberOfCreepers"); i++)
             {
                 Transform creeperTransform = transform.Find("Creeper"+i);
@@ -86,6 +86,10 @@ namespace Environment {
                                                                      Mathf.FloorToInt(2 * worldSizeZ / 8));
                 }
                 creeperTransform.position = creeperPos;
+            }
+            for (int i = 4; i > PlayerPrefs.GetInt("NumberOfCreepers"); i--) {
+                Transform creeperTransform = transform.Find("Creeper"+i);
+                creeperTransform.gameObject.SetActive(false);   
             }
             Physics.SyncTransforms();
         }
