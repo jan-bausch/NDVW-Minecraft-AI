@@ -30,17 +30,14 @@ namespace Creeper
                 exp.Play();
                 audioSource.Play();
 
-                // Destory Creeper after audio clip ended
                 Invoke("OnCreeperExploded", audioSource.clip.length);
                 // Destroy player
-                Destroy(other.gameObject);
+                Destroy(other.gameObject); 
                 // Stop timer
                 PlayerPrefs.SetInt("StopTimer", 1);
                 PlayerPrefs.SetString("EndSceneText", "You lose");
-                SceneManager.LoadScene(2);
-                
             }
-            if (remoteControlled && other.gameObject.name == "Player")
+            else if (remoteControlled && other.gameObject.name == "Player")
             {
                 PlayerMovement pm = other.gameObject.GetComponent<PlayerMovement>();
                 pm.dead = true;
@@ -49,7 +46,8 @@ namespace Creeper
 
         void OnCreeperExploded()
         {
-            Destroy(gameObject);
+            // Load the next scene after the explosion sound is finished
+            SceneManager.LoadScene(2);
         }
     }
 }
