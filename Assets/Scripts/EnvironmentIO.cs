@@ -112,15 +112,17 @@ namespace Environment
         {
             Transform playerTransform = transform.Find("Player");
 
+            var reward = 0.0f;
+
             if (!previouslyDead && dead)
             {
-                return -1.0f;
+                reward = -1.0f;
             } else if (dead)
             {
-                return 0.0f;
+                reward = 0.0f;
+            } else {
+                reward = (float) (currentInvPrecious - previousInvPrecious);
             }
-
-            var reward = 0.25f * (currentInvPrecious - previousInvPrecious);
 
             return reward;
         }
