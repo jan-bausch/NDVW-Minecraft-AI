@@ -119,7 +119,7 @@ namespace Player
                 //Debug.Log(pos);
                 pos -= environmentWorldGeneration.transform.position;
                 if (world.BlockAt(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z)) != -1) {
-                    Debug.DrawRay(cameraTransform.position, cameraTransform.forward * step * 100f, Color.red, rayTime);
+                    // Debug.DrawRay(cameraTransform.position, cameraTransform.forward * step * 100f, Color.red, rayTime);
                     return (pos, lastPos);
                 }
                 lastPos = new Vector3(Mathf.FloorToInt(pos.x), Mathf.FloorToInt(pos.y), Mathf.FloorToInt(pos.z));
