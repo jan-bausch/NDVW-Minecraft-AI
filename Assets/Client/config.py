@@ -41,6 +41,8 @@ class Config:
     def parse(path: str) -> "Config":
         config = configparser.ConfigParser()
         config.read(path)
+        print(f"Loaded config from {path}")
+        print(f"Config: {config}")
         return Config(config)
 
     def loaded_episodes(self) -> int:

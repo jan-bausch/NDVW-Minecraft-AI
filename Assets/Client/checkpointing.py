@@ -20,33 +20,34 @@ def load_checkpoint(
     config: Config = Config.parse(f"{checkpoint_dirname}/config.ini")
     generation_infos = [None for _ in range(config.generation_servers)]
     generation_models = [None for _ in range(config.generation_servers)]
-    learner_infos = ReplayingInfo.from_config(config)
+    learner_infos: ReplayingInfo = None
+    #learner_infos = ReplayingInfo.from_config(config)
     learner_model: Model = None
     replay_memory: ReplayMemory = None
 
     for filename in os.listdir(checkpoint_dirname):
         if filename.startswith("generation_info_"):
-            info = GenerationInfo.parse(f"{checkpoint_dirname}/{filename}")
+            info = GenerationInfo.from_config(f"{checkpoint_dirname}/{filename}")
             generation_infos[info.server_index] = info
         elif filename.startswith("generation_model_") and filename.endswith(
             ".params.pt"
         ):
             model = get_model(config)
             model.set_params(torch.load(f"{checkpoint_dirname}/{filename}", map_location=torch.device(config.device)))
-            state_filename = filename.replace(".params.pt", ".state.pt")
-            model.set_state(torch.load(f"{checkpoint_dirname}/{state_filename}"))
+            # state_filename = filename.replace(".params.pt", ".state.pt")
+            # model.set_state(torch.load(f"{checkpoint_dirname}/{state_filename}", map_location=torch.device(config.device)))
             server_index = int(
                 filename.replace("generation_model_", "").replace(".params.pt", "")
             )
             generation_models[server_index] = model
-        elif filename == "learner_info.ini":
-            learner_infos = ReplayingInfo.parse(f"{checkpoint_dirname}/{filename}")
+        # elif filename == "learner_info.ini":
+        #     learner_infos = ReplayingInfo.parse(f"{checkpoint_dirname}/{filename}")
         elif filename == "learner_model.params.pt":
             learner_model = get_model(config)
             learner_model.set_params(torch.load(f"{checkpoint_dirname}/{filename}", map_location=torch.device(config.device)))
-            learner_model.set_state(
-                torch.load(f"{checkpoint_dirname}/learner_model.state.pt")
-            )
+            # learner_model.set_state(
+            #     torch.load(f"{checkpoint_dirname}/learner_model.state.pt", map_location=torch.device(config.device))
+            # )
         # elif filename == "replay_memory.pickle":
         #     with open(f"{checkpoint_dirname}/{filename}", "rb") as f:
         #         replay_memory = ReplayMemory.deserialize(config, f.read())

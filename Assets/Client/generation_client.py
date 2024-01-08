@@ -1,10 +1,11 @@
 import asyncio
 import csv
-import random
+import math
+import os
 import socket
 import struct
 import time
-
+from PIL import Image
 import ray
 import torch
 
@@ -92,6 +93,7 @@ class Client:
     async def run(self):
         worlds_data = [[] for _ in range(self.config.parallel_worlds)]
         episode_changing_now = False
+        self.generation_infos.current_step = 0
         trajectory_ids = await asyncio.gather(*[self.replay_memory.new_trajectory.remote() for _ in range(self.config.parallel_worlds)])
 
         replay_memory_pushs = []
@@ -122,6 +124,23 @@ class Client:
             world_id, reward_signal, *game_state = struct.unpack(
                 f"<if{len(data)//4 - 2}i", data
             )
+
+            # if self.generation_infos.validation and world_id in [0, 1, 2, 3]:
+            #     pixels = game_state[2:]
+            #     #inventory = game_state[:2]
+            #     side_length = int(math.sqrt(len(pixels) // 3))  # Dividing by 3 for RGB channels
+            #     pixels_r = pixels[:len(pixels) // 3]
+            #     pixels_g = pixels[len(pixels) // 3:2 * len(pixels) // 3]
+            #     pixels_b = pixels[2 * len(pixels) // 3:]
+
+            #     image = Image.new('RGB', (side_length, side_length))
+            #     combined_pixels = list(zip(pixels_r, pixels_g, pixels_b))
+            #     image.putdata(combined_pixels)
+            #     dirname = f'training_data/pictures/{self.generation_infos.server_index}_{self.generation_infos.current_episode}_{world_id}/'
+            #     if not os.path.exists(dirname):
+            #         os.mkdir(dirname)
+            #     png_path = f'{dirname}/frame_{self.generation_infos.current_step}.png'
+            #     image.save(png_path)
 
             if (
                 not episode_changing_now

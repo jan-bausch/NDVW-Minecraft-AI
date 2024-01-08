@@ -1,3 +1,4 @@
+import copy
 import math
 import random
 import time
@@ -73,6 +74,7 @@ class ReplayMemory:
         return len(self.trajectories) - 1
     
     def complete_trajectory(self, trajectory_index: int):
+        #print(f"Completing trajectory {trajectory_index} of length {len(self.trajectories[trajectory_index])}   ")
         self.trajectories_complete[trajectory_index] = True
 
     def complete_count(self) -> int:
@@ -118,7 +120,7 @@ class ReplayMemory:
             weights=[math.pow(complete_trajectories_sum_importance[i]*10, 1.5)+1 for i in range(len(complete_trajectories))], 
             k=min(batch_size, len(complete_trajectories))
         )
-        random_trajectories = [complete_trajectories[i] for i in random_indices]
+        random_trajectories = [copy.deepcopy(complete_trajectories[i]) for i in random_indices]
 
         avg_importance = sum(complete_trajectories_sum_importance) / len(complete_trajectories_sum_importance)
         print(f"Average importance of complete trajectories: {avg_importance}")

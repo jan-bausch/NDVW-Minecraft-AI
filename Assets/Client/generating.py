@@ -1,3 +1,4 @@
+import configparser
 from attr import dataclass
 
 from config import Config
@@ -17,8 +18,9 @@ current_episode={self.current_episode}
 current_step={self.current_step}
 validation={self.validation}"""
 
-    def from_config(config: Config) -> "GenerationInfo":
-        _config = config.get_parseable_config()
+    def from_config(path: str) -> "GenerationInfo":
+        _config = configparser.ConfigParser()
+        _config.read(path)
 
         return GenerationInfo(
             server_index=_config.getint("generation", "server_index"),

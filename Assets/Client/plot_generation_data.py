@@ -76,12 +76,13 @@ ax1.set_xlabel('Action')
 ax1.set_ylabel('Frequency')
 
 # Plot: Line plot of reward over steps for all episodes
+window = 1
 reward_sum_per_episode = df.groupby(['episode', 'world_id'])['reward'].sum()
-reward_sum_per_episode = reward_sum_per_episode.groupby('episode').mean()
-reward_sum_per_episode_avg = reward_sum_per_episode.rolling(window=10).mean()
+reward_sum_per_episode = reward_sum_per_episode.groupby('episode').max()
+reward_sum_per_episode_avg = reward_sum_per_episode.rolling(window=window).mean()
 
 ax2.plot(reward_sum_per_episode_avg.index, reward_sum_per_episode_avg.values, color='red')
-ax2.set_title('Line Plot of Reward Sum per Episode (Average over 10 episodes)')
+ax2.set_title(f'Line Plot of Reward Sum per Episode')
 ax2.set_xlabel('Episode')
 ax2.set_ylabel('Reward Sum')
 

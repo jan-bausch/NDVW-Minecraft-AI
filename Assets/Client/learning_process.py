@@ -69,6 +69,9 @@ class LearningProcess:
             return
 
         print(f"New replay trajectories.\nTrajectories count: {len(trajectories)}")
+        
+        #for i, t in enumerate(trajectories):
+        #    print(f"Trajectory {i} length: {len(t)}")
 
         while self.replay_info.current_step < len(trajectories[0]):
             print(
@@ -127,17 +130,21 @@ class LearningProcess:
         # print(f"Min states size: {min(states_sizes)}")
         # print(f"Max states size: {max(states_sizes)}")
 
-        states = [
-            trajectories[i][self.replay_info.current_step].state
-            for i in range(len(trajectories))
-        ]
-        actions = [
-            trajectories[i][self.replay_info.current_step].action
-            for i in range(len(trajectories))
-        ]
-        rewards = [
-            trajectories[i][self.replay_info.current_step].reward
-            for i in range(len(trajectories))
-        ]
+        try:
+            states = [
+                trajectories[i][self.replay_info.current_step].state
+                for i in range(len(trajectories))
+            ]
+            actions = [
+                trajectories[i][self.replay_info.current_step].action
+                for i in range(len(trajectories))
+            ]
+            rewards = [
+                trajectories[i][self.replay_info.current_step].reward
+                for i in range(len(trajectories))
+            ]
 
-        self.model.train(states, actions, rewards)
+            self.model.train(states, actions, rewards)
+        except Exception as e:
+            print(f'Error in train_step: {self.replay_info.current_step}')
+            print(e)

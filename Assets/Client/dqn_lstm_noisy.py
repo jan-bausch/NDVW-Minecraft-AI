@@ -6,85 +6,6 @@ from torchrl.modules import NoisyLinear
 from model import Model
 from config import Config
 
-class ResidualBlock(nn.Module):
-    def __init__(self, channels):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_channels=channels, out_channels=channels // 2, kernel_size=1
-        )
-        self.bn1 = nn.BatchNorm2d(channels // 2)
-        self.relu = nn.ReLU()
-        self.conv2 = nn.Conv2d(
-            in_channels=channels // 2,
-            out_channels=channels // 2,
-            kernel_size=3,
-            padding=1,
-        )
-        self.bn2 = nn.BatchNorm2d(channels // 2)
-        self.conv3 = nn.Conv2d(
-            in_channels=channels // 2, out_channels=channels, kernel_size=1
-        )
-        self.bn3 = nn.BatchNorm2d(channels)
-
-    def forward(self, x):
-        residual = x
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
-        x = self.conv3(x)
-        x = self.bn3(x)
-        x += residual
-        x = self.relu(x)
-        return x
-
-
-class DownscalingResidualBlock(nn.Module):
-    def __init__(self, channels, s):
-        super(DownscalingResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(
-            in_channels=channels, out_channels=channels // s, kernel_size=1
-        )
-        self.bn1 = nn.BatchNorm2d(channels // s)
-        self.relu = nn.ReLU()
-        self.conv2 = nn.Conv2d(
-            in_channels=channels // s,
-            out_channels=channels // s,
-            kernel_size=3,
-            padding=1,
-            stride=s,
-        )
-        self.bn2 = nn.BatchNorm2d(channels // s)
-        self.conv3 = nn.Conv2d(
-            in_channels=channels // s, out_channels=(4 * channels) // s, kernel_size=1
-        )
-        self.bn3 = nn.BatchNorm2d((4 * channels) // s)
-        self.downscale = nn.Conv2d(
-            in_channels=channels,
-            out_channels=(4 * channels) // s,
-            kernel_size=1,
-            stride=s,
-        )
-        self.downscale_bn = nn.BatchNorm2d((4 * channels) // s)
-
-    def forward(self, x):
-        residual = x
-        x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        residual = self.downscale(residual)
-        residual = self.downscale_bn(residual)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
-        x = self.conv3(x)
-        x = self.bn3(x)
-        x += residual
-        x = self.relu(x)
-        return x
-
 
 class DQN(nn.Module):
     frame_dim: tuple[int, int]
@@ -98,23 +19,14 @@ class DQN(nn.Module):
         self.other_dim = other_dim
 
         self.conv1 = nn.Conv2d(
-            in_channels=self.frame_channels, out_channels=64, kernel_size=9
-        )  # 3x64x64 -> 64x56x56
-
-        self.bnconv1 = nn.BatchNorm2d(64)
+            in_channels=frame_channels, out_channels=32, kernel_size=2, stride=1
+        ) # 16x16x2 -> 15x15x32
+        self.bnconv1 = nn.BatchNorm2d(32)
         self.relu = nn.ReLU()
-
-        self.residual1 = ResidualBlock(64)
-        self.residual2 = ResidualBlock(64)
-        self.dresidual1 = DownscalingResidualBlock(64, 2)  # 64x56x56 -> 128x28x28
-        self.residual3 = ResidualBlock(128)
-        self.residual4 = ResidualBlock(128)
-        self.dresidual2 = DownscalingResidualBlock(128, 2)  # 128x28x28 -> 256x14x14
-        self.residual5 = ResidualBlock(256)
-        self.residual6 = ResidualBlock(256)
-        self.dresidual3 = DownscalingResidualBlock(256, 2)  # 256x14x14 -> 512x7x7
-        self.residual7 = ResidualBlock(512)
-        self.residual8 = ResidualBlock(512)
+        self.conv2 = nn.Conv2d(
+            in_channels=32, out_channels=64, kernel_size=6, stride=1
+        ) # 15x15x32 -> 10x10x64
+        self.bnconv2 = nn.BatchNorm2d(64)
 
         self.fc1 = NoisyLinear(self.calculate_conv_output_dim() + other_dim, 256, std_init=0.75)
         self.bnfc1 = nn.BatchNorm1d(256)
@@ -158,17 +70,9 @@ class DQN(nn.Module):
         x = self.conv1(x)
         x = self.bnconv1(x)
         x = self.relu(x)
-        x = self.residual1(x)
-        x = self.residual2(x)
-        x = self.dresidual1(x)
-        x = self.residual3(x)
-        x = self.residual4(x)
-        x = self.dresidual2(x)
-        x = self.residual5(x)
-        x = self.residual6(x)
-        x = self.dresidual3(x)
-        x = self.residual7(x)
-        x = self.residual8(x)
+        x = self.conv2(x)
+        x = self.bnconv2(x)
+        x = self.relu(x)
 
         return int(torch.prod(torch.tensor(x.size())))
 
@@ -184,17 +88,9 @@ class DQN(nn.Module):
         x = self.conv1(x)
         x = self.bnconv1(x)
         x = self.relu(x)
-        x = self.residual1(x)
-        x = self.residual2(x)
-        x = self.dresidual1(x)
-        x = self.residual3(x)
-        x = self.residual4(x)
-        x = self.dresidual2(x)
-        x = self.residual5(x)
-        x = self.residual6(x)
-        x = self.dresidual3(x)
-        x = self.residual7(x)
-        x = self.residual8(x)
+        x = self.conv2(x)
+        x = self.bnconv2(x)
+        x = self.relu(x)
 
         x = x.view(x.size(0), -1)  # Flatten for fully connected layer
         x = torch.cat((x_other, x), dim=1)
@@ -215,7 +111,7 @@ class DQN(nn.Module):
         self.fc3.reset_noise()
     
 
-class DqnLstmNoisyResModel(Model):
+class DqnLstmNoisyModel(Model):
     config: Config
     net: DQN
     target_net: DQN
